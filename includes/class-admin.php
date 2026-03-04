@@ -505,15 +505,15 @@ class CC_QA_Admin {
               </div>
             </div>
             <div class="wanswers-header-right">
-              <a href="https://wbuild.dev/questions/" target="_blank" class="wa-header-link">Live Demo ↗</a>
-              <a href="https://wbuild.dev/wanswers/" target="_blank" class="wa-header-link">Docs ↗</a>
+              <a href="https://wbuild.dev/questions/" target="_blank" rel="noopener" class="wa-header-link">Live Demo ↗</a>
+              <a href="https://wbuild.dev/wanswers/" target="_blank" rel="noopener" class="wa-header-link">Docs ↗</a>
               <span class="wa-badge">v<?php echo esc_html( CC_QA_VERSION ); ?></span>
             </div>
           </div>
 
           <!-- ══ QUICK LINKS ══ -->
           <div id="wanswers-quicklinks">
-            <a href="<?php echo esc_url( $archive_url ); ?>" target="_blank" class="wa-quicklink">
+            <a href="<?php echo esc_url( $archive_url ); ?>" target="_blank" rel="noopener" class="wa-quicklink">
               <span class="wa-ql-icon">🌐</span> View Q&amp;A Forum
             </a>
             <a href="<?php echo esc_url( admin_url( 'edit.php?post_type=cc_question' ) ); ?>" class="wa-quicklink">
@@ -525,7 +525,7 @@ class CC_QA_Admin {
             <a href="<?php echo esc_url( admin_url( 'edit.php?post_type=cc_answer' ) ); ?>" class="wa-quicklink">
               <span class="wa-ql-icon">💬</span> Manage Answers
             </a>
-            <a href="https://github.com/wbuilddev/wanswers" target="_blank" class="wa-quicklink">
+            <a href="https://github.com/wbuilddev/wanswers" target="_blank" rel="noopener" class="wa-quicklink">
               <span class="wa-ql-icon">⭐</span> GitHub
             </a>
           </div>
@@ -571,9 +571,9 @@ class CC_QA_Admin {
                           <?php endif; ?>
                         </strong>
                         <?php if ( $homepage_mode ) : ?>
-                          <span>Your Q&amp;A feed is live at <a href="<?php echo esc_url( home_url( '/' ) ); ?>" target="_blank"><?php echo esc_html( home_url( '/' ) ); ?> ↗</a></span>
+                          <span>Your Q&amp;A feed is live at <a href="<?php echo esc_url( home_url( '/' ) ); ?>" target="_blank" rel="noopener"><?php echo esc_html( home_url( '/' ) ); ?> ↗</a></span>
                         <?php else : ?>
-                          <span>Q&amp;A feed is at <a href="<?php echo esc_url( $archive_url ); ?>" target="_blank">/questions/ ↗</a>. Enable to serve it at <code>/</code> instead.</span>
+                          <span>Q&amp;A feed is at <a href="<?php echo esc_url( $archive_url ); ?>" target="_blank" rel="noopener">/questions/ ↗</a>. Enable to serve it at <code>/</code> instead.</span>
                         <?php endif; ?>
                       </div>
                     </div>
@@ -594,7 +594,7 @@ class CC_QA_Admin {
                 <div class="wa-section-icon">📄</div>
                 <div>
                   <div class="wa-section-title">Archive Page Content</div>
-                  <div class="wa-section-desc">Heading, subtitle and SEO metadata for your <a href="<?php echo esc_url( $archive_url ); ?>" target="_blank">/questions/ page ↗</a>, no template editing needed</div>
+                  <div class="wa-section-desc">Heading, subtitle and SEO metadata for your <a href="<?php echo esc_url( $archive_url ); ?>" target="_blank" rel="noopener">/questions/ page ↗</a>, no template editing needed</div>
                 </div>
               </div>
               <div class="wa-section-body">
