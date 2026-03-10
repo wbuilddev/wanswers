@@ -214,7 +214,7 @@ class CC_QA_Shortcode {
                 }
                 wp_reset_postdata();
             } else {
-                echo '<div class="qa-empty"><span class="qa-empty-icon">💬</span><p>No questions yet. Be the first to ask!</p></div>';
+                echo '<div class="qa-empty"><span class="qa-empty-icon">&#128172;</span><p>' . esc_html__( 'No questions yet. Be the first to ask!', 'wanswers' ) . '</p></div>';
             }
             ?>
           </div>
@@ -231,7 +231,7 @@ class CC_QA_Shortcode {
 
           <?php if ( CC_QA_Admin::get( 'cc_qa_footer_credit' ) ) : ?>
           <p class="qa-powered-by">
-            Powered by <a href="https://wbuild.dev/wanswers/" target="_blank" rel="noopener"><span style="color:#ff5020;font-weight:700;">w</span>Answers</a>
+            Powered by <a href="https://wbuild.dev/wanswers/" target="_blank" rel="noopener noreferrer"><span style="color:#ff5020;font-weight:700;">w</span>Answers</a>
           </p>
           <?php endif; ?>
 
@@ -356,7 +356,7 @@ class CC_QA_Shortcode {
               </div>
               <span class="qa-meta-dot">·</span>
               <time class="qa-meta-time" datetime="<?php echo esc_attr( get_the_date( 'c', $post ) ); ?>">
-                <?php echo esc_html( human_time_diff( get_post_time( 'U', false, $post ), current_time( 'timestamp' ) ) . ' ago' ); ?>
+                <?php echo esc_html( human_time_diff( get_post_time( 'U', false, $post ), time() ) . ' ago' ); ?>
               </time>
               <?php if ( $perms['can_edit'] ) : ?>
                 <button class="qa-edit-btn"
@@ -451,7 +451,7 @@ class CC_QA_Shortcode {
                 </div>
                 <span class="qa-meta-dot">·</span>
                 <time class="qa-meta-time" datetime="<?php echo esc_attr( get_the_date( 'c', $post ) ); ?>">
-                  <?php echo esc_html( human_time_diff( get_post_time( 'U', false, $post ), current_time( 'timestamp' ) ) . ' ago' ); ?>
+                  <?php echo esc_html( human_time_diff( get_post_time( 'U', false, $post ), time() ) . ' ago' ); ?>
                 </time>
 
                 <div class="qa-answer-actions">
@@ -522,7 +522,7 @@ class CC_QA_Shortcode {
         $is_admin        = current_user_can( 'delete_others_posts' );
         $initial         = strtoupper( substr( $reply['user_name'], 0, 1 ) ) ?: 'M';
         $time            = ! empty( $reply['created_at'] )
-                           ? human_time_diff( strtotime( get_date_from_gmt( $reply['created_at'] ) ), current_time( 'timestamp' ) ) . ' ago'
+                           ? human_time_diff( strtotime( get_date_from_gmt( $reply['created_at'] ) ), time() ) . ' ago'
                            : 'just now';
 
         // 1-hour edit window for replies
@@ -531,7 +531,7 @@ class CC_QA_Shortcode {
         if ( $is_admin ) {
             $can_edit_reply = true;
         } elseif ( $is_reply_author && ! empty( $reply['created_at'] ) ) {
-            $elapsed = current_time( 'timestamp' ) - strtotime( get_date_from_gmt( $reply['created_at'] ) );
+            $elapsed = time() - strtotime( get_date_from_gmt( $reply['created_at'] ) );
             if ( $elapsed < HOUR_IN_SECONDS ) {
                 $can_edit_reply  = true;
                 $reply_mins_left = (int) ceil( ( HOUR_IN_SECONDS - $elapsed ) / 60 );
@@ -637,8 +637,8 @@ class CC_QA_Shortcode {
         }
 
         $posted_at      = get_post_time( 'U', false, $post );
-        $edit_window    = 60 * MINUTE_IN_SECONDS; // 1 hour
-        $elapsed        = current_time( 'timestamp' ) - $posted_at;
+        $edit_window    = HOUR_IN_SECONDS;
+        $elapsed        = time() - $posted_at;
         $within_window  = $elapsed < $edit_window;
         $mins_remaining = $within_window ? (int) ceil( ( $edit_window - $elapsed ) / 60 ) : 0;
 

@@ -216,26 +216,26 @@ class CC_QA_Email {
         $scope = sanitize_key( $_GET['scope'] ?? 'question' );
 
         if ( ! $token ) {
-            wp_die( 'Invalid unsubscribe link.', 'Unsubscribe Error', array( 'response' => 400 ) );
+            wp_die( esc_html__( 'Invalid unsubscribe link.', 'wanswers' ), esc_html__( 'Unsubscribe Error', 'wanswers' ), array( 'response' => 400 ) );
         }
 
         $sub = CC_QA_Database::get_sub_by_token( $token );
         if ( ! $sub ) {
-            wp_die( 'This unsubscribe link has already been used or is invalid.', 'Already Unsubscribed', array( 'response' => 200 ) );
+            wp_die( esc_html__( 'This unsubscribe link has already been used or is invalid.', 'wanswers' ), esc_html__( 'Already Unsubscribed', 'wanswers' ), array( 'response' => 200 ) );
         }
 
         if ( 'all' === $scope ) {
             CC_QA_Database::unsubscribe_all_for_user( (int) $sub->user_id );
-            wp_die( '✅ You have been unsubscribed from all Q&amp;A email notifications. You can re-subscribe by participating in a question or answer.', 'Unsubscribed', array( 'response' => 200 ) );
+            wp_die( wp_kses_post( __( '&#9989; You have been unsubscribed from all Q&amp;A email notifications. You can re-subscribe by participating in a question or answer.', 'wanswers' ) ), esc_html__( 'Unsubscribed', 'wanswers' ), array( 'response' => 200 ) );
         } else {
             CC_QA_Database::unsubscribe_by_token( $token );
             $q_title = get_the_title( (int) $sub->question_id );
             /* translators: %s: question title */
             $msg = $q_title
-                ? sprintf( '✅ You have been unsubscribed from notifications for: <strong>%s</strong>.', esc_html( $q_title ) )
-                : '✅ You have been unsubscribed.';
-            // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- $msg is built from esc_html() escaped title and static HTML
-            wp_die( $msg, 'Unsubscribed', array( 'response' => 200 ) );
+                /* translators: %s: question title */
+                ? sprintf( __( '&#9989; You have been unsubscribed from notifications for: <strong>%s</strong>.', 'wanswers' ), esc_html( $q_title ) )
+                : __( '&#9989; You have been unsubscribed.', 'wanswers' );
+            wp_die( wp_kses_post( $msg ), esc_html__( 'Unsubscribed', 'wanswers' ), array( 'response' => 200 ) );
         }
     }
 }

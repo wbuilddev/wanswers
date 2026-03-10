@@ -56,13 +56,13 @@ class CC_QA_Ajax {
     /* ── Helpers ── */
     private static function verify() {
         if ( ! check_ajax_referer( 'cc_qa_nonce', 'nonce', false ) ) {
-            wp_send_json_error( array( 'message' => 'Security check failed.' ), 403 );
+            wp_send_json_error( array( 'message' => __( 'Security check failed.', 'wanswers' ) ), 403 );
         }
     }
 
     private static function require_login() {
         if ( ! is_user_logged_in() ) {
-            wp_send_json_error( array( 'message' => 'You must be logged in.' ), 401 );
+            wp_send_json_error( array( 'message' => __( 'You must be logged in.', 'wanswers' ) ), 401 );
         }
     }
 
@@ -94,9 +94,10 @@ class CC_QA_Ajax {
 
         if ( $count >= $max ) {
             /* translators: 1: action label, 2: max allowed, 3: window in minutes */
-            $label   = array( 'question' => 'questions', 'answer' => 'answers', 'vote' => 'votes' )[ $action ] ?? $action;
+            $label   = array( 'question' => __( 'questions', 'wanswers' ), 'answer' => __( 'answers', 'wanswers' ), 'vote' => __( 'votes', 'wanswers' ) )[ $action ] ?? $action;
             $message = sprintf(
-                'Slow down, you can post %d %s every %d minutes. Please wait a moment.',
+                /* translators: 1: max allowed, 2: action label, 3: window in minutes */
+                __( 'Slow down, you can post %1$d %2$s every %3$d minutes. Please wait a moment.', 'wanswers' ),
                 $max,
                 $label,
                 $window
@@ -136,7 +137,8 @@ class CC_QA_Ajax {
 
         $min_q = (int) CC_QA_Admin::get( 'cc_qa_min_question_length' );
         if ( strlen( $title ) < $min_q ) {
-            wp_send_json_error( array( 'message' => "Question title must be at least {$min_q} characters." ) );
+            /* translators: %d: minimum character count */
+            wp_send_json_error( array( 'message' => sprintf( __( 'Question title must be at least %d characters.', 'wanswers' ), $min_q ) ) );
         }
 
         $user = wp_get_current_user();
@@ -180,7 +182,7 @@ class CC_QA_Ajax {
             $html = ob_get_clean();
 
             wp_send_json_success( array(
-                'message'      => 'Your question has been posted!',
+                'message'      => __( 'Your question has been posted!', 'wanswers' ),
                 'html'         => $html,
                 'post_id'      => $post_id,
                 'question_url' => get_permalink( $post_id ),
@@ -188,7 +190,7 @@ class CC_QA_Ajax {
             ) );
         } else {
             wp_send_json_success( array(
-                'message' => 'Your question has been submitted and is pending review.',
+                'message' => __( 'Your question has been submitted and is pending review.', 'wanswers' ),
                 'html'    => '',
                 'post_id' => $post_id,
                 'pending' => true,
@@ -208,12 +210,13 @@ class CC_QA_Ajax {
         $content     = self::sanitize_content( wp_unslash( $_POST['content'] ?? '' ) );
 
         if ( ! $question_id || get_post_type( $question_id ) !== 'cc_question' ) {
-            wp_send_json_error( array( 'message' => 'Invalid question.' ) );
+            wp_send_json_error( array( 'message' => __( 'Invalid question.', 'wanswers' ) ) );
         }
 
         $min_a = (int) CC_QA_Admin::get( 'cc_qa_min_answer_length' );
         if ( strlen( wp_strip_all_tags( $content ) ) < $min_a ) {
-            wp_send_json_error( array( 'message' => "Answer must be at least {$min_a} characters." ) );
+            /* translators: %d: minimum character count */
+            wp_send_json_error( array( 'message' => sprintf( __( 'Answer must be at least %d characters.', 'wanswers' ), $min_a ) ) );
         }
 
         $user    = wp_get_current_user();
@@ -253,7 +256,7 @@ class CC_QA_Ajax {
         $html = ob_get_clean();
 
         wp_send_json_success( array(
-            'message'      => 'Your answer has been posted!',
+            'message'      => __( 'Your answer has been posted!', 'wanswers' ),
             'html'         => $html,
             'answer_id'    => $post_id,
             'answer_count' => $count + 1,
@@ -269,20 +272,20 @@ class CC_QA_Ajax {
         // phpcs:ignore WordPress.Security.NonceVerification.Missing, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized, WordPress.Security.ValidatedSanitizedInput.MissingUnslash -- Nonce verified in self::verify()
         $post_id   = absint( $_POST['post_id'] ?? 0 );
         // phpcs:ignore WordPress.Security.NonceVerification.Missing, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized, WordPress.Security.ValidatedSanitizedInput.MissingUnslash -- Nonce verified in self::verify()
-        $vote_type = (int) ( $_POST['vote_type'] ?? 1 );
+        $vote_type = (int) wp_unslash( $_POST['vote_type'] ?? 1 );
         $user_id   = get_current_user_id();
 
         if ( ! $post_id ) {
-            wp_send_json_error( array( 'message' => 'Invalid post.' ) );
+            wp_send_json_error( array( 'message' => __( 'Invalid post.', 'wanswers' ) ) );
         }
 
         $post = get_post( $post_id );
         if ( $post && (int) $post->post_author === $user_id ) {
-            wp_send_json_error( array( 'message' => "You can't vote on your own post." ) );
+            wp_send_json_error( array( 'message' => __( 'You cannot vote on your own post.', 'wanswers' ) ) );
         }
 
         if ( CC_QA_Database::user_voted( $post_id, $user_id ) ) {
-            wp_send_json_error( array( 'message' => 'You already voted on this.' ) );
+            wp_send_json_error( array( 'message' => __( 'You already voted on this.', 'wanswers' ) ) );
         }
 
         $count = CC_QA_Database::add_vote( $post_id, $user_id, $vote_type );
@@ -311,17 +314,17 @@ class CC_QA_Ajax {
         $user_id     = get_current_user_id();
 
         if ( ! $answer_id || ! $question_id ) {
-            wp_send_json_error( array( 'message' => 'Invalid answer.' ) );
+            wp_send_json_error( array( 'message' => __( 'Invalid answer.', 'wanswers' ) ) );
         }
 
         $q_author = (int) get_post_field( 'post_author', $question_id );
         if ( $q_author !== $user_id && ! current_user_can( 'edit_others_posts' ) ) {
-            wp_send_json_error( array( 'message' => 'Only the question author can accept an answer.' ) );
+            wp_send_json_error( array( 'message' => __( 'Only the question author can accept an answer.', 'wanswers' ) ) );
         }
 
         $a_author = (int) get_post_field( 'post_author', $answer_id );
         if ( $a_author === $user_id && ! current_user_can( 'edit_others_posts' ) ) {
-            wp_send_json_error( array( 'message' => "You can't accept your own answer." ) );
+            wp_send_json_error( array( 'message' => __( 'You cannot accept your own answer.', 'wanswers' ) ) );
         }
 
         $prev = get_post_meta( $question_id, '_cc_qa_accepted_answer', true );
@@ -351,12 +354,12 @@ class CC_QA_Ajax {
         $post    = get_post( $post_id );
 
         if ( ! $post || $post->post_type !== 'cc_question' ) {
-            wp_send_json_error( array( 'message' => 'Invalid question.' ) );
+            wp_send_json_error( array( 'message' => __( 'Invalid question.', 'wanswers' ) ) );
         }
 
         $user_id = get_current_user_id();
         if ( (int) $post->post_author !== $user_id && ! current_user_can( 'delete_others_posts' ) ) {
-            wp_send_json_error( array( 'message' => 'Permission denied.' ) );
+            wp_send_json_error( array( 'message' => __( 'Permission denied.', 'wanswers' ) ) );
         }
 
         $answers = get_posts( array(
@@ -385,12 +388,12 @@ class CC_QA_Ajax {
         $post      = get_post( $answer_id );
 
         if ( ! $post || $post->post_type !== 'cc_answer' ) {
-            wp_send_json_error( array( 'message' => 'Invalid answer.' ) );
+            wp_send_json_error( array( 'message' => __( 'Invalid answer.', 'wanswers' ) ) );
         }
 
         $user_id = get_current_user_id();
         if ( (int) $post->post_author !== $user_id && ! current_user_can( 'delete_others_posts' ) ) {
-            wp_send_json_error( array( 'message' => 'Permission denied.' ) );
+            wp_send_json_error( array( 'message' => __( 'Permission denied.', 'wanswers' ) ) );
         }
 
         $question_id = (int) $post->post_parent;
@@ -501,11 +504,11 @@ class CC_QA_Ajax {
         $content   = self::sanitize_content( wp_unslash( $_POST['content'] ?? '' ) );
 
         if ( ! $answer_id || get_post_type( $answer_id ) !== 'cc_answer' ) {
-            wp_send_json_error( array( 'message' => 'Invalid answer.' ) );
+            wp_send_json_error( array( 'message' => __( 'Invalid answer.', 'wanswers' ) ) );
         }
 
         if ( strlen( wp_strip_all_tags( $content ) ) < 2 ) {
-            wp_send_json_error( array( 'message' => 'Reply is too short.' ) );
+            wp_send_json_error( array( 'message' => __( 'Reply is too short.', 'wanswers' ) ) );
         }
 
         $user        = wp_get_current_user();
@@ -545,12 +548,12 @@ class CC_QA_Ajax {
         $post    = get_post( $post_id );
 
         if ( ! $post || $post->post_type !== 'cc_question' ) {
-            wp_send_json_error( array( 'message' => 'Invalid question.' ) );
+            wp_send_json_error( array( 'message' => __( 'Invalid question.', 'wanswers' ) ) );
         }
 
         $perms = CC_QA_Shortcode::get_edit_permissions( $post );
         if ( ! $perms['can_edit'] ) {
-            wp_send_json_error( array( 'message' => 'You can no longer edit this question (1-hour window has passed).' ), 403 );
+            wp_send_json_error( array( 'message' => __( 'You can no longer edit this question (1-hour window has passed).', 'wanswers' ) ), 403 );
         }
 
         // phpcs:ignore WordPress.Security.NonceVerification.Missing, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized, WordPress.Security.ValidatedSanitizedInput.MissingUnslash -- Nonce verified in self::verify()
@@ -560,7 +563,8 @@ class CC_QA_Ajax {
 
         $min_q = (int) CC_QA_Admin::get( 'cc_qa_min_question_length' );
         if ( strlen( $title ) < $min_q ) {
-            wp_send_json_error( array( 'message' => "Question title must be at least {$min_q} characters." ) );
+            /* translators: %d: minimum character count */
+            wp_send_json_error( array( 'message' => sprintf( __( 'Question title must be at least %d characters.', 'wanswers' ), $min_q ) ) );
         }
 
         wp_update_post( array(
@@ -587,12 +591,12 @@ class CC_QA_Ajax {
         $post    = get_post( $post_id );
 
         if ( ! $post || $post->post_type !== 'cc_answer' ) {
-            wp_send_json_error( array( 'message' => 'Invalid answer.' ) );
+            wp_send_json_error( array( 'message' => __( 'Invalid answer.', 'wanswers' ) ) );
         }
 
         $perms = CC_QA_Shortcode::get_edit_permissions( $post );
         if ( ! $perms['can_edit'] ) {
-            wp_send_json_error( array( 'message' => 'You can no longer edit this answer (1-hour window has passed).' ), 403 );
+            wp_send_json_error( array( 'message' => __( 'You can no longer edit this answer (1-hour window has passed).', 'wanswers' ) ), 403 );
         }
 
         // phpcs:ignore WordPress.Security.NonceVerification.Missing, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized, WordPress.Security.ValidatedSanitizedInput.MissingUnslash -- Nonce verified in self::verify()
@@ -600,7 +604,8 @@ class CC_QA_Ajax {
 
         $min_a = (int) CC_QA_Admin::get( 'cc_qa_min_answer_length' );
         if ( strlen( wp_strip_all_tags( $content ) ) < $min_a ) {
-            wp_send_json_error( array( 'message' => "Answer must be at least {$min_a} characters." ) );
+            /* translators: %d: minimum character count */
+            wp_send_json_error( array( 'message' => sprintf( __( 'Answer must be at least %d characters.', 'wanswers' ), $min_a ) ) );
         }
 
         wp_update_post( array(
@@ -628,25 +633,25 @@ class CC_QA_Ajax {
         $user_id   = get_current_user_id();
 
         if ( strlen( wp_strip_all_tags( $content ) ) < 2 ) {
-            wp_send_json_error( array( 'message' => 'Reply is too short.' ) );
+            wp_send_json_error( array( 'message' => __( 'Reply is too short.', 'wanswers' ) ) );
         }
 
         $replies = get_post_meta( $answer_id, '_cc_qa_replies', true ) ?: array();
 
         if ( ! isset( $replies[ $reply_id ] ) ) {
-            wp_send_json_error( array( 'message' => 'Reply not found.' ) );
+            wp_send_json_error( array( 'message' => __( 'Reply not found.', 'wanswers' ) ) );
         }
 
         $reply = $replies[ $reply_id ];
 
         if ( (int) $reply['user_id'] !== $user_id && ! current_user_can( 'delete_others_posts' ) ) {
-            wp_send_json_error( array( 'message' => 'Permission denied.' ), 403 );
+            wp_send_json_error( array( 'message' => __( 'Permission denied.', 'wanswers' ) ), 403 );
         }
 
         // Enforce 1-hour window (admins bypass)
         if ( ! current_user_can( 'delete_others_posts' ) && ! empty( $reply['created_at'] ) ) {
             if ( ( time() - strtotime( $reply['created_at'] ) ) >= HOUR_IN_SECONDS ) {
-                wp_send_json_error( array( 'message' => 'The 1-hour edit window for this reply has passed.' ), 403 );
+                wp_send_json_error( array( 'message' => __( 'The 1-hour edit window for this reply has passed.', 'wanswers' ) ), 403 );
             }
         }
 

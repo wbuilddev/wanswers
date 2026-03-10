@@ -68,7 +68,7 @@ $lifetime_score = ( $lifetime_up * 2 )
                 - $lifetime_down;
 
 // Member since days
-$days_member = (int) floor( ( current_time( 'timestamp' ) - strtotime( get_date_from_gmt( $profile_user->user_registered ) ) ) / DAY_IN_SECONDS );
+$days_member = (int) floor( ( time() - strtotime( get_date_from_gmt( $profile_user->user_registered ) ) ) / DAY_IN_SECONDS );
 $years       = floor( $days_member / 365 );
 $months      = floor( ( $days_member % 365 ) / 30 );
 if ( $years > 0 ) {
@@ -278,7 +278,7 @@ get_header();
               <?php if ( $q_acc ) : ?><span class="qa-status-accepted">✓</span><?php endif; ?>
               <span class="qa-profile-q-stat"><?php echo esc_html( $q_votes ); ?> votes</span>
               <span class="qa-profile-q-stat"><?php echo esc_html( $q_ans ); ?> <?php echo $q_ans === 1 ? 'answer' : 'answers'; ?></span>
-              <span class="qa-meta-time"><?php echo esc_html( human_time_diff( get_post_time( 'U', false, $q ), current_time( 'timestamp' ) ) . ' ago' ); ?></span>
+              <span class="qa-meta-time"><?php echo esc_html( human_time_diff( get_post_time( 'U', false, $q ), time() ) . ' ago' ); ?></span>
             </div>
           </div>
           <?php endforeach; ?>
@@ -315,7 +315,7 @@ get_header();
             </div>
             <div class="qa-profile-a-meta">
               <span class="qa-profile-q-stat"><?php echo esc_html( $a_votes ); ?> votes</span>
-              <span class="qa-meta-time"><?php echo esc_html( human_time_diff( get_post_time( 'U', false, $ans ), current_time( 'timestamp' ) ) . ' ago' ); ?></span>
+              <span class="qa-meta-time"><?php echo esc_html( human_time_diff( get_post_time( 'U', false, $ans ), time() ) . ' ago' ); ?></span>
             </div>
           </a>
           <?php endforeach; ?>

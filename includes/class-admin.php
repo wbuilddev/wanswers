@@ -11,17 +11,25 @@ class CC_QA_Admin {
         add_action( 'admin_init',    array( __CLASS__, 'handle_reset_leaderboard' ) );
         add_action( 'admin_init',    array( __CLASS__, 'handle_digest_actions' ) );
         add_action( 'updated_option', array( __CLASS__, 'on_option_saved' ), 10, 3 );
-        add_action( 'wp_head',       array( __CLASS__, 'output_custom_css' ) );
+        add_action( 'wp_enqueue_scripts', array( __CLASS__, 'output_custom_css' ) );
+        add_action( 'admin_enqueue_scripts', array( __CLASS__, 'enqueue_admin_assets' ) );
         add_filter( 'manage_cc_question_posts_columns',       array( __CLASS__, 'question_columns' ) );
         add_action( 'manage_cc_question_posts_custom_column', array( __CLASS__, 'question_column_data' ), 10, 2 );
     }
 
-    /** Output admin-supplied custom CSS on the front-end. */
+    /** Enqueue admin CSS only on the plugin settings page. */
+    public static function enqueue_admin_assets( $hook ) {
+        if ( 'cc_question_page_cc-qa-settings' !== $hook ) {
+            return;
+        }
+        wp_enqueue_style( 'cc-qa-admin', CC_QA_URL . 'assets/css/admin.css', array(), CC_QA_VERSION );
+    }
+
+    /** Output admin-supplied custom CSS on the front-end via wp_add_inline_style. */
     public static function output_custom_css() {
         $css = trim( self::get( 'cc_qa_custom_css' ) );
-        if ( $css ) {
-            // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- CSS sanitized with wp_strip_all_tags; safe for style block
-            echo '<style id="cc-qa-custom-css">' . wp_strip_all_tags( $css ) . '</style>' . "\n";
+        if ( $css && wp_style_is( 'cc-qa-style', 'enqueued' ) ) {
+            wp_add_inline_style( 'cc-qa-style', wp_strip_all_tags( $css ) );
         }
     }
 
@@ -134,338 +142,6 @@ class CC_QA_Admin {
     public static function settings_page() {
         if ( ! current_user_can( 'manage_options' ) ) return;
         ?>
-        <style>
-        /* ════════════════════════════════════════════════════════════
-           wAnswers Settings Page - Modern SaaS Design
-        ════════════════════════════════════════════════════════════ */
-        :root {
-            --wa-orange:      #ff5020;
-            --wa-orange-dark: #e04018;
-            --wa-dark:        #111110;
-            --wa-dark2:       #1e1d1b;
-            --wa-text:        #1a1917;
-            --wa-text2:       #4b4845;
-            --wa-text3:       #8a8784;
-            --wa-border:      #e4e2de;
-            --wa-border2:     #f0ede9;
-            --wa-bg:          #f7f5f2;
-            --wa-white:       #ffffff;
-            --wa-radius:      10px;
-            --wa-radius-sm:   6px;
-        }
-
-        /* ── Page wrapper ── */
-        #wanswers-settings { max-width: 960px; padding-bottom: 60px; }
-        #wanswers-settings .wrap { margin: 0; }
-
-        /* ── Hero header bar ── */
-        #wanswers-header {
-            display: flex; align-items: center; justify-content: space-between;
-            background: var(--wa-dark);
-            border-radius: var(--wa-radius);
-            padding: 20px 28px;
-            margin-bottom: 28px;
-            box-shadow: 0 4px 24px rgba(0,0,0,.18);
-        }
-        #wanswers-header .wanswers-logo {
-            display: flex; align-items: center; gap: 12px;
-        }
-        #wanswers-header .wanswers-logo .wa-icon {
-            width: 38px; height: 38px; border-radius: 9px;
-            background: var(--wa-orange);
-            display: flex; align-items: center; justify-content: center;
-            flex-shrink: 0;
-        }
-        #wanswers-header .wanswers-logo .wa-icon svg { display: block; }
-        #wanswers-header .wanswers-logo .wa-wordmark {
-            font-size: 20px; font-weight: 800; color: #fff;
-            letter-spacing: -0.04em; line-height: 1;
-        }
-        #wanswers-header .wanswers-logo .wa-wordmark span { color: var(--wa-orange); }
-        #wanswers-header .wanswers-logo .wa-tagline {
-            font-size: 12px; color: rgba(255,255,255,.4);
-            font-weight: 400; margin-top: 3px; letter-spacing: 0;
-        }
-        #wanswers-header .wanswers-header-right {
-            display: flex; align-items: center; gap: 10px;
-        }
-        #wanswers-header .wa-badge {
-            background: rgba(255,255,255,.08);
-            color: rgba(255,255,255,.5);
-            font-size: 11px; font-weight: 700; letter-spacing: .08em;
-            text-transform: uppercase; padding: 5px 10px; border-radius: 20px;
-        }
-        #wanswers-header .wa-header-link {
-            color: rgba(255,255,255,.5); font-size: 12px; font-weight: 500;
-            text-decoration: none; padding: 6px 12px; border-radius: 6px;
-            border: 1px solid rgba(255,255,255,.12);
-            transition: color .15s, border-color .15s, background .15s;
-        }
-        #wanswers-header .wa-header-link:hover {
-            color: #fff; border-color: rgba(255,255,255,.25);
-            background: rgba(255,255,255,.06);
-        }
-
-        /* ── Quick-links strip ── */
-        #wanswers-quicklinks {
-            display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 28px;
-        }
-        .wa-quicklink {
-            display: inline-flex; align-items: center; gap: 6px;
-            background: var(--wa-white); border: 1px solid var(--wa-border);
-            border-radius: var(--wa-radius-sm); padding: 7px 14px;
-            font-size: 12px; font-weight: 600; color: var(--wa-text2);
-            text-decoration: none; transition: border-color .15s, color .15s, box-shadow .15s;
-            box-shadow: 0 1px 3px rgba(0,0,0,.05);
-        }
-        .wa-quicklink:hover { border-color: var(--wa-orange); color: var(--wa-orange); box-shadow: 0 2px 8px rgba(255,80,32,.12); }
-        .wa-quicklink .wa-ql-icon { font-size: 14px; line-height: 1; }
-
-        /* ── Section cards ── */
-        .wa-section {
-            background: var(--wa-white);
-            border: 1px solid var(--wa-border);
-            border-radius: var(--wa-radius);
-            margin-bottom: 16px;
-            box-shadow: 0 1px 4px rgba(0,0,0,.04);
-            overflow: hidden;
-        }
-        .wa-section-head {
-            display: flex; align-items: center; gap: 12px;
-            padding: 16px 22px;
-            border-bottom: 1px solid var(--wa-border2);
-            background: var(--wa-bg);
-        }
-        .wa-section-head .wa-section-icon {
-            width: 32px; height: 32px; border-radius: 8px;
-            background: var(--wa-white); border: 1px solid var(--wa-border);
-            display: flex; align-items: center; justify-content: center;
-            font-size: 15px; flex-shrink: 0;
-            box-shadow: 0 1px 3px rgba(0,0,0,.06);
-        }
-        .wa-section-head .wa-section-title {
-            font-size: 13px; font-weight: 700; color: var(--wa-text); margin: 0;
-        }
-        .wa-section-head .wa-section-desc {
-            font-size: 12px; color: var(--wa-text3); margin: 2px 0 0; font-weight: 400;
-        }
-        .wa-section-body { padding: 0; }
-
-        /* ── Rows inside sections ── */
-        .wa-row {
-            display: grid; grid-template-columns: 220px 1fr;
-            align-items: start; gap: 0;
-            border-bottom: 1px solid var(--wa-border2);
-        }
-        .wa-row:last-child { border-bottom: none; }
-        .wa-row-label {
-            padding: 16px 22px; font-size: 13px; font-weight: 600;
-            color: var(--wa-text); line-height: 1.4;
-        }
-        .wa-row-label .wa-row-hint {
-            display: block; font-size: 11px; font-weight: 400;
-            color: var(--wa-text3); margin-top: 3px; line-height: 1.4;
-        }
-        .wa-row-control { padding: 14px 22px; }
-        .wa-row-control .description {
-            font-size: 12px; color: var(--wa-text3); margin-top: 6px; line-height: 1.5;
-        }
-        .wa-row-control code {
-            background: var(--wa-bg); border: 1px solid var(--wa-border);
-            padding: 1px 5px; border-radius: 3px; font-size: 11px; color: var(--wa-text2);
-        }
-
-        /* ── Toggle / checkbox rows ── */
-        .wa-toggle-row {
-            display: flex; align-items: flex-start; gap: 12px;
-        }
-        .wa-toggle {
-            position: relative; display: inline-flex;
-            width: 36px; height: 20px; flex-shrink: 0; margin-top: 1px;
-        }
-        .wa-toggle input { opacity: 0; width: 0; height: 0; position: absolute; }
-        .wa-toggle-track {
-            position: absolute; inset: 0; border-radius: 20px;
-            background: #d1cec9; cursor: pointer;
-            transition: background .2s;
-        }
-        .wa-toggle-track::after {
-            content: ''; position: absolute; left: 3px; top: 3px;
-            width: 14px; height: 14px; border-radius: 50%;
-            background: #fff; transition: transform .2s;
-            box-shadow: 0 1px 3px rgba(0,0,0,.2);
-        }
-        .wa-toggle input:checked + .wa-toggle-track { background: var(--wa-orange); }
-        .wa-toggle input:checked + .wa-toggle-track::after { transform: translateX(16px); }
-        .wa-toggle-body { flex: 1; }
-        .wa-toggle-body strong { font-size: 13px; font-weight: 600; color: var(--wa-text); display: block; }
-        .wa-toggle-body span { font-size: 12px; color: var(--wa-text3); margin-top: 2px; display: block; line-height: 1.5; }
-
-        /* ── Status badge in toggle rows ── */
-        .wa-status {
-            display: inline-flex; align-items: center; gap: 5px;
-            font-size: 11px; font-weight: 700; padding: 3px 9px; border-radius: 20px;
-            text-transform: uppercase; letter-spacing: .05em;
-        }
-        .wa-status-on  { background: #dcfce7; color: #166534; }
-        .wa-status-off { background: #f1f5f9; color: #64748b; }
-        .wa-status::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
-
-        /* ── Inputs ── */
-        #wanswers-settings input[type="text"],
-        #wanswers-settings input[type="number"],
-        #wanswers-settings select,
-        #wanswers-settings textarea {
-            border: 1px solid var(--wa-border) !important;
-            border-radius: var(--wa-radius-sm) !important;
-            box-shadow: 0 1px 2px rgba(0,0,0,.04) inset !important;
-            font-size: 13px !important;
-            color: var(--wa-text) !important;
-            background: var(--wa-white) !important;
-            transition: border-color .15s, box-shadow .15s !important;
-            padding: 7px 10px !important;
-        }
-        #wanswers-settings input[type="text"]:focus,
-        #wanswers-settings input[type="number"]:focus,
-        #wanswers-settings select:focus,
-        #wanswers-settings textarea:focus {
-            border-color: var(--wa-orange) !important;
-            box-shadow: 0 0 0 3px rgba(255,80,32,.12) !important;
-            outline: none !important;
-        }
-        #wanswers-settings input[type="number"] { width: 80px !important; }
-        #wanswers-settings select { padding-right: 28px !important; }
-        #wanswers-settings textarea.wa-css-editor {
-            font-family: 'SFMono-Regular', Consolas, monospace !important;
-            font-size: 12px !important; line-height: 1.6 !important;
-            resize: vertical !important;
-        }
-
-        /* ── Notice inline ── */
-        .wa-notice {
-            display: flex; align-items: center; gap: 8px;
-            padding: 10px 14px; border-radius: var(--wa-radius-sm);
-            font-size: 12px; font-weight: 500; margin-top: 10px;
-        }
-        .wa-notice-success { background: #f0fdf4; border: 1px solid #bbf7d0; color: #166534; }
-        .wa-notice-info    { background: #eff6ff; border: 1px solid #bfdbfe; color: #1e40af; }
-        .wa-notice a { color: inherit; font-weight: 700; }
-
-        /* ── Number input with unit label ── */
-        .wa-number-group { display: flex; align-items: center; gap: 8px; }
-        .wa-number-group .wa-unit { font-size: 12px; color: var(--wa-text3); font-weight: 500; }
-
-        /* ── Save bar ── */
-        #wanswers-save-bar {
-            background: var(--wa-white); border: 1px solid var(--wa-border);
-            border-radius: var(--wa-radius); padding: 16px 22px;
-            display: flex; align-items: center; justify-content: space-between;
-            margin-bottom: 28px;
-            box-shadow: 0 1px 4px rgba(0,0,0,.04);
-        }
-        #wanswers-save-bar p { margin: 0; font-size: 13px; color: var(--wa-text3); }
-        #wanswers-save-bar .wa-save-btn {
-            background: var(--wa-orange) !important; border: none !important;
-            color: #fff !important; font-size: 13px !important; font-weight: 700 !important;
-            padding: 9px 24px !important; border-radius: var(--wa-radius-sm) !important;
-            height: auto !important; cursor: pointer !important;
-            box-shadow: 0 2px 8px rgba(255,80,32,.35) !important;
-            transition: background .15s, box-shadow .15s, transform .1s !important;
-            letter-spacing: -.01em !important;
-        }
-        #wanswers-save-bar .wa-save-btn:hover {
-            background: var(--wa-orange-dark) !important;
-            box-shadow: 0 4px 14px rgba(255,80,32,.45) !important;
-            transform: translateY(-1px) !important;
-        }
-        #wanswers-save-bar .wa-save-btn:active { transform: translateY(0) !important; }
-
-        /* ── Tool action cards (digest send, leaderboard reset) ── */
-        .wa-tool-card {
-            background: var(--wa-white); border: 1px solid var(--wa-border);
-            border-radius: var(--wa-radius); padding: 20px 22px;
-            margin-bottom: 16px; display: flex; align-items: center;
-            justify-content: space-between; gap: 20px; flex-wrap: wrap;
-            box-shadow: 0 1px 4px rgba(0,0,0,.04);
-        }
-        .wa-tool-card-body h3 {
-            font-size: 13px; font-weight: 700; color: var(--wa-text); margin: 0 0 4px;
-        }
-        .wa-tool-card-body p {
-            font-size: 12px; color: var(--wa-text3); margin: 0; line-height: 1.5;
-        }
-        .wa-tool-btn {
-            display: inline-flex; align-items: center; gap: 6px;
-            padding: 8px 18px; border-radius: var(--wa-radius-sm);
-            font-size: 12px; font-weight: 700; cursor: pointer; border: none;
-            transition: background .15s, box-shadow .15s; white-space: nowrap;
-            text-decoration: none;
-        }
-        .wa-tool-btn-secondary {
-            background: var(--wa-bg); color: var(--wa-text2);
-            border: 1px solid var(--wa-border) !important;
-        }
-        .wa-tool-btn-secondary:hover { background: var(--wa-border2); border-color: #ccc !important; color: var(--wa-text); }
-        .wa-tool-btn-danger {
-            background: #fef2f2; color: #b91c1c;
-            border: 1px solid #fecaca !important;
-        }
-        .wa-tool-btn-danger:hover { background: #fee2e2; border-color: #fca5a5 !important; }
-
-        /* ── Shortcode pills ── */
-        .wa-shortcode-grid { display: flex; flex-direction: column; gap: 8px; margin-top: 4px; }
-        .wa-shortcode-pill {
-            display: flex; align-items: flex-start; gap: 12px;
-            padding: 10px 14px; background: var(--wa-bg);
-            border: 1px solid var(--wa-border); border-radius: var(--wa-radius-sm);
-        }
-        .wa-shortcode-pill code {
-            font-family: 'SFMono-Regular', Consolas, monospace;
-            font-size: 12px; color: var(--wa-orange); background: transparent !important;
-            border: none !important; padding: 0 !important; font-weight: 700; white-space: nowrap;
-        }
-        .wa-shortcode-pill span { font-size: 12px; color: var(--wa-text3); line-height: 1.5; }
-
-        /* ── Settings footer ── */
-        #wanswers-footer {
-            margin-top: 32px; padding: 18px 22px;
-            background: var(--wa-dark); border-radius: var(--wa-radius);
-            display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;
-        }
-        #wanswers-footer .wa-footer-brand {
-            display: flex; align-items: center; gap: 10px;
-        }
-        #wanswers-footer .wa-footer-brand .wa-icon-sm {
-            width: 28px; height: 28px; border-radius: 7px;
-            background: var(--wa-orange); display: flex; align-items: center; justify-content: center;
-        }
-        #wanswers-footer .wa-footer-brand .wa-icon-sm svg { display: block; }
-        #wanswers-footer .wa-footer-wordmark {
-            font-size: 14px; font-weight: 800; color: #fff; letter-spacing: -.03em;
-        }
-        #wanswers-footer .wa-footer-wordmark span { color: var(--wa-orange); }
-        #wanswers-footer .wa-footer-links {
-            display: flex; align-items: center; gap: 6px;
-        }
-        #wanswers-footer .wa-footer-links a {
-            color: rgba(255,255,255,.4); font-size: 12px; text-decoration: none; font-weight: 500;
-            padding: 4px 8px; border-radius: 4px; transition: color .15s;
-        }
-        #wanswers-footer .wa-footer-links a:hover { color: rgba(255,255,255,.8); }
-        #wanswers-footer .wa-footer-links .wa-dot { color: rgba(255,255,255,.15); font-size: 10px; }
-        #wanswers-footer .wa-version-pill {
-            background: rgba(255,255,255,.07); color: rgba(255,255,255,.35);
-            font-size: 10px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase;
-            padding: 4px 10px; border-radius: 20px;
-        }
-
-        /* ── WP notices inside our wrap ── */
-        #wanswers-settings .notice { border-radius: var(--wa-radius-sm); margin: 0 0 16px; }
-
-        /* ── Digest meta info ── */
-        .wa-digest-meta { font-size: 11px; color: var(--wa-text3); margin-top: 6px; }
-        .wa-digest-meta strong { color: var(--wa-text2); }
-        </style>
 
         <?php
         // Pull all saved values upfront for cleanliness
@@ -1160,14 +836,16 @@ class CC_QA_Admin {
      * Handle digest manual send from the settings page POST.
      */
     public static function handle_digest_actions() {
-        if ( empty( $_POST['cc_qa_action'] ) ) return;
+        // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce verified below per action
+        $action = isset( $_POST['cc_qa_action'] ) ? sanitize_text_field( wp_unslash( $_POST['cc_qa_action'] ) ) : '';
+        if ( empty( $action ) ) return;
         if ( ! current_user_can( 'manage_options' ) ) return;
 
-        if ( 'send_digest_now' === $_POST['cc_qa_action'] ) {
+        if ( 'send_digest_now' === $action ) {
             check_admin_referer( 'cc_qa_digest_actions', 'cc_qa_digest_nonce' );
             CC_QA_Digest::send();
             add_action( 'admin_notices', function() {
-                echo '<div class="notice notice-success is-dismissible"><p>✅ Weekly digest sent to all subscribers.</p></div>';
+                echo '<div class="notice notice-success is-dismissible"><p>' . esc_html__( 'Weekly digest sent to all subscribers.', 'wanswers' ) . '</p></div>';
             } );
         }
     }
@@ -1187,7 +865,9 @@ class CC_QA_Admin {
     }
 
     public static function handle_reset_leaderboard() {
-        if ( empty( $_POST['cc_qa_action'] ) || $_POST['cc_qa_action'] !== 'reset_leaderboard' ) {
+        // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce verified below via check_admin_referer
+        $action = isset( $_POST['cc_qa_action'] ) ? sanitize_text_field( wp_unslash( $_POST['cc_qa_action'] ) ) : '';
+        if ( 'reset_leaderboard' !== $action ) {
             return;
         }
         if ( ! current_user_can( 'manage_options' ) ) {
@@ -1196,7 +876,7 @@ class CC_QA_Admin {
         check_admin_referer( 'cc_qa_reset_leaderboard', 'cc_qa_reset_nonce' );
         CC_QA_Leaderboard::reset_stats();
         add_action( 'admin_notices', function() {
-            echo '<div class="notice notice-success is-dismissible"><p>✅ Leaderboard has been reset. Scores now count from today. Lifetime vote counts are unchanged.</p></div>';
+            echo '<div class="notice notice-success is-dismissible"><p>' . esc_html__( 'Leaderboard has been reset. Scores now count from today. Lifetime vote counts are unchanged.', 'wanswers' ) . '</p></div>';
         } );
     }
 

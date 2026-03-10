@@ -4,7 +4,7 @@ Tags: q&a, community, questions answers, seo, schema
 Requires at least: 6.0
 Tested up to: 6.9
 Requires PHP: 7.4
-Stable tag: 2.9.2
+Stable tag: 2.9.3
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -190,6 +190,15 @@ The plugin has not been tested on Multisite installations and is not officially 
 5. Admin settings page
 
 == Changelog ==
+
+= 2.9.3 =
+* Admin settings CSS moved to enqueued stylesheet (no more inline style block)
+* Custom CSS output now uses wp_add_inline_style instead of raw style tag
+* All admin POST handlers properly sanitized with sanitize_text_field and wp_unslash
+* All user-facing strings wrapped in translation functions for i18n
+* Replaced deprecated current_time('timestamp') with time() throughout
+* Template output escaping improvements
+* Credit link updated to include noreferrer on external links
 
 = 2.9.2 =
 * Added "Disable built-in schema" toggle in SEO settings for compatibility with RankMath, Yoast, and other SEO plugins.

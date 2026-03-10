@@ -3,7 +3,7 @@
  * Plugin Name:       wAnswers - SEO-First Q&A
  * Plugin URI:        https://wbuild.dev/wanswers/
  * Description:       SEO-first community Q&A with QAPage JSON-LD schema, voting, badges, leaderboard, and email notifications. Optimised for Google and Generative Engine Optimization (GEO / AI search).
- * Version:           2.9.2
+ * Version:           2.9.3
  * Author:            wBuild.dev
  * Author URI:        https://wbuild.dev
  * Text Domain:       wanswers
@@ -16,7 +16,7 @@
 if ( ! defined( 'ABSPATH' ) ) exit;
 if ( defined( 'CC_QA_VERSION' ) ) return;
 
-define( 'CC_QA_VERSION',  '2.9.2' );
+define( 'CC_QA_VERSION',  '2.9.3' );
 define( 'CC_QA_PATH',     plugin_dir_path( __FILE__ ) );
 define( 'CC_QA_URL',      plugin_dir_url( __FILE__ ) );
 define( 'CC_QA_BASENAME', plugin_basename( __FILE__ ) );
@@ -107,14 +107,14 @@ function cc_qa_js_config( $login_redirect = '' ) {
         'user_id'   => get_current_user_id(),
         'title_max' => (int) CC_QA_Admin::get( 'cc_qa_question_title_max' ),
         'strings'   => array(
-            'vote_thanks'     => 'Vote recorded!',
-            'already_voted'   => 'You already voted on this.',
-            'login_to_vote'   => 'Please log in to vote.',
-            'login_to_ask'    => 'Please log in to ask a question.',
-            'login_to_answer' => 'Please log in to answer.',
-            'confirm_delete'  => 'Are you sure you want to delete this?',
-            'submitting'      => 'Submitting…',
-            'error'           => 'Something went wrong. Please try again.',
+            'vote_thanks'     => __( 'Vote recorded!', 'wanswers' ),
+            'already_voted'   => __( 'You already voted on this.', 'wanswers' ),
+            'login_to_vote'   => __( 'Please log in to vote.', 'wanswers' ),
+            'login_to_ask'    => __( 'Please log in to ask a question.', 'wanswers' ),
+            'login_to_answer' => __( 'Please log in to answer.', 'wanswers' ),
+            'confirm_delete'  => __( 'Are you sure you want to delete this?', 'wanswers' ),
+            'submitting'      => __( 'Submitting…', 'wanswers' ),
+            'error'           => __( 'Something went wrong. Please try again.', 'wanswers' ),
         ),
     );
 }

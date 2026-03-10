@@ -166,17 +166,17 @@ get_header();
 
         <!-- Vote Column -->
         <div class="qa-vote-col">
-          <button class="qa-vote-btn qa-vote-up <?php echo $user_voted ? 'voted' : ''; ?>"
+          <button class="qa-vote-btn qa-vote-up <?php echo $user_voted ? 'voted' : ''; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- static string ?>"
                   data-post-id="<?php echo esc_attr( $question_id ); ?>"
                   data-vote="1"
                   aria-label="Upvote question"
-                  <?php echo ( ! is_user_logged_in() || $is_author ) ? 'disabled' : ''; ?>>▲</button>
+                  <?php echo ( ! is_user_logged_in() || $is_author ) ? 'disabled' : ''; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- static string ?>>▲</button>
           <span class="qa-vote-count" id="votes-<?php echo esc_attr( $question_id ); ?>"><?php echo esc_html( $votes ); ?></span>
           <button class="qa-vote-btn qa-vote-down"
                   data-post-id="<?php echo esc_attr( $question_id ); ?>"
                   data-vote="-1"
                   aria-label="Downvote question"
-                  <?php echo ( ! is_user_logged_in() || $is_author ) ? 'disabled' : ''; ?>>▼</button>
+                  <?php echo ( ! is_user_logged_in() || $is_author ) ? 'disabled' : ''; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- static string ?>>▼</button>
         </div>
 
         <!-- Content -->
@@ -247,7 +247,7 @@ get_header();
             <span class="qa-meta-sep">·</span>
             <time class="qa-meta-date" datetime="<?php echo esc_attr( get_the_date( 'c', $question ) ); ?>"
                   itemprop="dateCreated">
-              <?php echo esc_html( human_time_diff( get_post_time( 'U', false, $question ), current_time( 'timestamp' ) ) . ' ago' ); ?>
+              <?php echo esc_html( human_time_diff( get_post_time( 'U', false, $question ), time() ) . ' ago' ); ?>
             </time>
             <?php if ( (int) get_post_meta( $question_id, '_cc_qa_accepted', true ) ) : ?>
               <span class="qa-status-accepted">✓ Answered</span>
@@ -276,7 +276,7 @@ get_header();
       <div class="qa-answers-header">
         <h2 class="qa-answers-title">
           <span id="answer-count-<?php echo esc_attr( $question_id ); ?>"><?php echo esc_html( $a_count ); ?></span>
-          <?php echo $a_count === 1 ? 'Answer' : 'Answers'; ?>
+          <?php echo esc_html( $a_count === 1 ? __( 'Answer', 'wanswers' ) : __( 'Answers', 'wanswers' ) ); ?>
         </h2>
         <?php if ( $a_count > 1 ) : ?>
         <div class="qa-answer-sort">

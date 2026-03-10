@@ -15,7 +15,9 @@ if ( ! defined( 'WP_UNINSTALL_PLUGIN' ) ) {
 global $wpdb;
 
 // Drop custom tables
+// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table prefix is trusted core data
 $wpdb->query( "DROP TABLE IF EXISTS `{$wpdb->prefix}cc_qa_votes`" );
+// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table prefix is trusted core data
 $wpdb->query( "DROP TABLE IF EXISTS `{$wpdb->prefix}cc_qa_subscriptions`" );
 
 // Delete all plugin options
