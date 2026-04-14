@@ -1,18 +1,18 @@
 <?php
 if ( ! defined( 'ABSPATH' ) ) exit;
-if ( class_exists( 'CC_QA_Leaderboard' ) ) return;
+if ( class_exists( 'Wanswers_Leaderboard' ) ) return;
 
-class CC_QA_Leaderboard {
+class Wanswers_Leaderboard {
 
-    const CACHE_KEY = 'cc_qa_leaderboard_stats';
+    const CACHE_KEY = 'wanswers_leaderboard_stats';
     const CACHE_TTL = 300; // 5 minutes
 
     public static function init() {
-        add_shortcode( 'cc_qa_leaderboard', array( __CLASS__, 'render' ) );
+        add_shortcode( 'wanswers_leaderboard', array( __CLASS__, 'render' ) );
     }
 
     public static function bust_cache() {
-        wp_cache_delete( self::CACHE_KEY, 'cc_qa' );
+        wp_cache_delete( self::CACHE_KEY, 'wanswers_qa' );
     }
 
     /**
@@ -21,25 +21,25 @@ class CC_QA_Leaderboard {
      * and are never affected by this reset.
      */
     public static function reset_stats() {
-        update_option( 'cc_qa_leaderboard_reset_date', gmdate( 'Y-m-d H:i:s' ) );
+        update_option( 'wanswers_leaderboard_reset_date', gmdate( 'Y-m-d H:i:s' ) );
         self::bust_cache();
     }
 
     public static function get_stats() {
         global $wpdb;
 
-        $cached = wp_cache_get( self::CACHE_KEY, 'cc_qa' );
+        $cached = wp_cache_get( self::CACHE_KEY, 'wanswers_qa' );
         if ( false !== $cached ) {
             return $cached;
         }
 
         $posts     = esc_sql( $wpdb->prefix . 'posts' );
         $postmeta  = esc_sql( $wpdb->prefix . 'postmeta' );
-        $votes_tbl = esc_sql( $wpdb->prefix . 'cc_qa_votes' );
+        $votes_tbl = esc_sql( $wpdb->prefix . 'wanswers_votes' );
         $users_tbl = esc_sql( $wpdb->prefix . 'users' );
 
         // If a reset date is set, only count activity after that date
-        $reset_date = get_option( 'cc_qa_leaderboard_reset_date', '' );
+        $reset_date = get_option( 'wanswers_leaderboard_reset_date', '' );
         $date_clause_posts = $reset_date ? $wpdb->prepare( "AND p.post_date > %s", $reset_date ) : '';
         $date_clause_votes = $reset_date ? $wpdb->prepare( "AND v.created_at > %s", $reset_date ) : '';
         // For simple post queries (no alias)
@@ -51,7 +51,7 @@ class CC_QA_Leaderboard {
         // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared
         $rows = $wpdb->get_results(
             "SELECT post_author AS user_id, COUNT(*) AS total FROM `{$posts}`
-             WHERE post_type = 'cc_question' AND post_status = 'publish' {$date_clause_plain}
+             WHERE post_type = 'wanswers_question' AND post_status = 'publish' {$date_clause_plain}
              GROUP BY post_author ORDER BY total DESC"
         );
         foreach ( $rows as $r ) {
@@ -62,7 +62,7 @@ class CC_QA_Leaderboard {
         // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared
         $rows = $wpdb->get_results(
             "SELECT post_author AS user_id, COUNT(*) AS total FROM `{$posts}`
-             WHERE post_type = 'cc_answer' AND post_status = 'publish' {$date_clause_plain}
+             WHERE post_type = 'wanswers_answer' AND post_status = 'publish' {$date_clause_plain}
              GROUP BY post_author ORDER BY total DESC"
         );
         foreach ( $rows as $r ) {
@@ -75,8 +75,8 @@ class CC_QA_Leaderboard {
             "SELECT p.post_author AS user_id, COUNT(*) AS total
              FROM `{$posts}` p
              INNER JOIN `{$postmeta}` pm ON pm.post_id = p.ID
-             WHERE p.post_type = 'cc_answer' AND p.post_status = 'publish'
-               AND pm.meta_key = '_cc_qa_accepted' AND pm.meta_value = '1'
+             WHERE p.post_type = 'wanswers_answer' AND p.post_status = 'publish'
+               AND pm.meta_key = '_wanswers_accepted' AND pm.meta_value = '1'
                {$date_clause_posts}
              GROUP BY p.post_author ORDER BY total DESC"
         );
@@ -89,7 +89,7 @@ class CC_QA_Leaderboard {
         $rows = $wpdb->get_results(
             "SELECT p.post_author AS user_id, COUNT(*) AS total
              FROM `{$votes_tbl}` v INNER JOIN `{$posts}` p ON p.ID = v.post_id
-             WHERE v.vote = 1 AND p.post_type = 'cc_question' AND p.post_status = 'publish'
+             WHERE v.vote = 1 AND p.post_type = 'wanswers_question' AND p.post_status = 'publish'
                {$date_clause_votes}
              GROUP BY p.post_author ORDER BY total DESC"
         );
@@ -102,7 +102,7 @@ class CC_QA_Leaderboard {
         $rows = $wpdb->get_results(
             "SELECT p.post_author AS user_id, COUNT(*) AS total
              FROM `{$votes_tbl}` v INNER JOIN `{$posts}` p ON p.ID = v.post_id
-             WHERE v.vote = -1 AND p.post_type = 'cc_question' AND p.post_status = 'publish'
+             WHERE v.vote = -1 AND p.post_type = 'wanswers_question' AND p.post_status = 'publish'
                {$date_clause_votes}
              GROUP BY p.post_author ORDER BY total DESC"
         );
@@ -115,7 +115,7 @@ class CC_QA_Leaderboard {
         $rows = $wpdb->get_results(
             "SELECT p.post_author AS user_id, COUNT(*) AS total
              FROM `{$votes_tbl}` v INNER JOIN `{$posts}` p ON p.ID = v.post_id
-             WHERE v.vote = 1 AND p.post_type = 'cc_answer' AND p.post_status = 'publish'
+             WHERE v.vote = 1 AND p.post_type = 'wanswers_answer' AND p.post_status = 'publish'
                {$date_clause_votes}
              GROUP BY p.post_author ORDER BY total DESC"
         );
@@ -128,7 +128,7 @@ class CC_QA_Leaderboard {
         $rows = $wpdb->get_results(
             "SELECT p.post_author AS user_id, COUNT(*) AS total
              FROM `{$votes_tbl}` v INNER JOIN `{$posts}` p ON p.ID = v.post_id
-             WHERE v.vote = -1 AND p.post_type = 'cc_answer' AND p.post_status = 'publish'
+             WHERE v.vote = -1 AND p.post_type = 'wanswers_answer' AND p.post_status = 'publish'
                {$date_clause_votes}
              GROUP BY p.post_author ORDER BY total DESC"
         );
@@ -173,9 +173,9 @@ class CC_QA_Leaderboard {
                     $name = ( ! empty( trim( $u->display_name ) ) ) ? $u->display_name : $u->user_login;
                     $stats[ $u->ID ]['name']              = $name;
                     $stats[ $u->ID ]['initial']           = strtoupper( substr( $name, 0, 1 ) );
-                    $stats[ $u->ID ]['profile_url']       = CC_QA_Badges::profile_url( $u->ID );
-                    $stats[ $u->ID ]['lifetime_upvotes']  = (int) get_user_meta( $u->ID, '_cc_qa_lifetime_upvotes',   true );
-                    $stats[ $u->ID ]['lifetime_downvotes']= (int) get_user_meta( $u->ID, '_cc_qa_lifetime_downvotes', true );
+                    $stats[ $u->ID ]['profile_url']       = Wanswers_Badges::profile_url( $u->ID );
+                    $stats[ $u->ID ]['lifetime_upvotes']  = (int) get_user_meta( $u->ID, '_wanswers_lifetime_upvotes',   true );
+                    $stats[ $u->ID ]['lifetime_downvotes']= (int) get_user_meta( $u->ID, '_wanswers_lifetime_downvotes', true );
                 }
             }
         }
@@ -185,7 +185,7 @@ class CC_QA_Leaderboard {
             return ! empty( $s['name'] );
         } );
 
-        wp_cache_set( self::CACHE_KEY, $stats, 'cc_qa', self::CACHE_TTL );
+        wp_cache_set( self::CACHE_KEY, $stats, 'wanswers_qa', self::CACHE_TTL );
 
         return $stats;
     }
@@ -243,16 +243,16 @@ class CC_QA_Leaderboard {
 
     /** Read the admin-configured limit, falling back to 10. */
     public static function get_limit() {
-        return (int) CC_QA_Admin::get( 'cc_qa_leaderboard_limit' );
+        return (int) Wanswers_Admin::get( 'wanswers_leaderboard_limit' );
     }
 
     public static function render( $atts ) {
         $default_limit = self::get_limit();
-        $atts  = shortcode_atts( array( 'limit' => $default_limit ), $atts, 'cc_qa_leaderboard' );
+        $atts  = shortcode_atts( array( 'limit' => $default_limit ), $atts, 'wanswers_leaderboard' );
         $limit = max( 3, min( 50, (int) $atts['limit'] ) );
 
-        wp_enqueue_style(  'cc-qa-style',  CC_QA_URL . 'assets/css/wanswers.css',  array(), CC_QA_VERSION );
-        wp_enqueue_script( 'cc-qa-script', CC_QA_URL . 'assets/js/wanswers.js', array(), CC_QA_VERSION, array( 'strategy' => 'defer', 'in_footer' => true ) );
+        wp_enqueue_style(  'wanswers-style',  WANSWERS_URL . 'assets/css/wanswers.css',  array(), WANSWERS_VERSION );
+        wp_enqueue_script( 'wanswers-script', WANSWERS_URL . 'assets/js/wanswers.js', array(), WANSWERS_VERSION, array( 'strategy' => 'defer', 'in_footer' => true ) );
 
         return self::render_inner( $limit, 'standalone' );
     }
@@ -307,10 +307,10 @@ class CC_QA_Leaderboard {
 
           <div class="qa-lb-tabs" role="tablist">
             <?php foreach ( $cats as $i => $cat ) : ?>
-              <button class="qa-lb-tab <?php echo 0 === $i ? 'active' : ''; ?>"
+              <button class="qa-lb-tab <?php echo esc_attr( 0 === $i ? 'active' : '' ); ?>"
                       role="tab"
                       data-tab="<?php echo esc_attr( $cat['id'] ); ?>"
-                      aria-selected="<?php echo 0 === $i ? 'true' : 'false'; ?>">
+                      aria-selected="<?php echo esc_attr( 0 === $i ? 'true' : 'false' ); ?>">
                 <span class="qa-lb-tab-icon"><?php echo esc_html( $cat['icon'] ); ?></span>
                 <span class="qa-lb-tab-label"><?php echo esc_html( $cat['label'] ); ?></span>
               </button>
@@ -318,7 +318,7 @@ class CC_QA_Leaderboard {
           </div>
 
           <?php foreach ( $cats as $i => $cat ) : ?>
-            <div class="qa-lb-panel <?php echo 0 === $i ? 'active' : ''; ?>"
+            <div class="qa-lb-panel <?php echo esc_attr( 0 === $i ? 'active' : '' ); ?>"
                  id="lb-panel-<?php echo esc_attr( $cat['id'] ); ?>"
                  role="tabpanel">
 

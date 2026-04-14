@@ -1,14 +1,14 @@
 <?php
 if ( ! defined( 'ABSPATH' ) ) exit;
 
-if ( class_exists( 'CC_QA_Ajax' ) ) return;
+if ( class_exists( 'Wanswers_Ajax' ) ) return;
 
-class CC_QA_Ajax {
+class Wanswers_Ajax {
 
     /*
      * NONCE VERIFICATION NOTE:
      * Every handler calls self::verify() as its first line, which runs
-     * check_ajax_referer( 'cc_qa_nonce', 'nonce', false ). PHPCS cannot
+     * check_ajax_referer( 'wanswers_nonce', 'nonce', false ). PHPCS cannot
         // phpcs:ignore WordPress.Security.NonceVerification.Missing, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized, WordPress.Security.ValidatedSanitizedInput.MissingUnslash -- Nonce verified in self::verify()
      * trace this indirect call, so $_POST accesses below carry inline ignores.
      *
@@ -23,31 +23,31 @@ class CC_QA_Ajax {
         // nopriv hooks are intentionally omitted; the server-side require_login()
         // check would catch them anyway, but not registering them is cleaner.
         $authed_only = array(
-            'cc_qa_submit_question',
-            'cc_qa_submit_answer',
-            'cc_qa_submit_reply',
-            'cc_qa_delete_reply',
-            'cc_qa_vote',
-            'cc_qa_accept_answer',
-            'cc_qa_delete_question',
-            'cc_qa_delete_answer',
-            'cc_qa_edit_question',
-            'cc_qa_edit_answer',
-            'cc_qa_edit_reply',
+            'wanswers_submit_question',
+            'wanswers_submit_answer',
+            'wanswers_submit_reply',
+            'wanswers_delete_reply',
+            'wanswers_vote',
+            'wanswers_accept_answer',
+            'wanswers_delete_question',
+            'wanswers_delete_answer',
+            'wanswers_edit_question',
+            'wanswers_edit_answer',
+            'wanswers_edit_reply',
         );
 
         // Load-more actions are public (no login needed to browse).
         $public = array(
-            'cc_qa_load_more_questions',
-            'cc_qa_load_more_answers',
+            'wanswers_load_more_questions',
+            'wanswers_load_more_answers',
         );
 
         foreach ( $authed_only as $action ) {
-            add_action( "wp_ajax_{$action}", array( __CLASS__, str_replace( 'cc_qa_', 'handle_', $action ) ) );
+            add_action( "wp_ajax_{$action}", array( __CLASS__, str_replace( 'wanswers_', 'handle_', $action ) ) );
         }
 
         foreach ( $public as $action ) {
-            $handler = str_replace( 'cc_qa_', 'handle_', $action );
+            $handler = str_replace( 'wanswers_', 'handle_', $action );
             add_action( "wp_ajax_{$action}",        array( __CLASS__, $handler ) );
             add_action( "wp_ajax_nopriv_{$action}", array( __CLASS__, $handler ) );
         }
@@ -55,14 +55,14 @@ class CC_QA_Ajax {
 
     /* ── Helpers ── */
     private static function verify() {
-        if ( ! check_ajax_referer( 'cc_qa_nonce', 'nonce', false ) ) {
-            wp_send_json_error( array( 'message' => __( 'Security check failed.', 'wanswers' ) ), 403 );
+        if ( ! check_ajax_referer( 'wanswers_nonce', 'nonce', false ) ) {
+            wp_send_json_error( array( 'message' => __( 'Security check failed.', 'wanswers-seo-first-qa' ) ), 403 );
         }
     }
 
     private static function require_login() {
         if ( ! is_user_logged_in() ) {
-            wp_send_json_error( array( 'message' => __( 'You must be logged in.', 'wanswers' ) ), 401 );
+            wp_send_json_error( array( 'message' => __( 'You must be logged in.', 'wanswers-seo-first-qa' ) ), 401 );
         }
     }
 
@@ -81,23 +81,23 @@ class CC_QA_Ajax {
         // Admins/editors bypass rate limits
         if ( current_user_can( 'edit_others_posts' ) ) return;
 
-        $window  = max( 1, (int) CC_QA_Admin::get( 'cc_qa_rate_limit_window' ) );   // minutes
+        $window  = max( 1, (int) Wanswers_Admin::get( 'wanswers_rate_limit_window' ) );   // minutes
         $max_map = array(
-            'question' => max( 1, (int) CC_QA_Admin::get( 'cc_qa_rate_limit_questions' ) ),
-            'answer'   => max( 1, (int) CC_QA_Admin::get( 'cc_qa_rate_limit_answers' ) ),
-            'vote'     => max( 1, (int) CC_QA_Admin::get( 'cc_qa_rate_limit_votes' ) ),
+            'question' => max( 1, (int) Wanswers_Admin::get( 'wanswers_rate_limit_questions' ) ),
+            'answer'   => max( 1, (int) Wanswers_Admin::get( 'wanswers_rate_limit_answers' ) ),
+            'vote'     => max( 1, (int) Wanswers_Admin::get( 'wanswers_rate_limit_votes' ) ),
         );
         $max = $max_map[ $action ] ?? 3;
 
-        $key   = "cc_qa_rl_{$action}_{$user_id}";
+        $key   = "wanswers_rl_{$action}_{$user_id}";
         $count = (int) get_transient( $key );
 
         if ( $count >= $max ) {
             /* translators: 1: action label, 2: max allowed, 3: window in minutes */
-            $label   = array( 'question' => __( 'questions', 'wanswers' ), 'answer' => __( 'answers', 'wanswers' ), 'vote' => __( 'votes', 'wanswers' ) )[ $action ] ?? $action;
+            $label   = array( 'question' => __( 'questions', 'wanswers-seo-first-qa' ), 'answer' => __( 'answers', 'wanswers-seo-first-qa' ), 'vote' => __( 'votes', 'wanswers-seo-first-qa' ) )[ $action ] ?? $action;
             $message = sprintf(
                 /* translators: 1: max allowed, 2: action label, 3: window in minutes */
-                __( 'Slow down, you can post %1$d %2$s every %3$d minutes. Please wait a moment.', 'wanswers' ),
+                __( 'Slow down, you can post %1$d %2$s every %3$d minutes. Please wait a moment.', 'wanswers-seo-first-qa' ),
                 $max,
                 $label,
                 $window
@@ -135,19 +135,19 @@ class CC_QA_Ajax {
         // phpcs:ignore WordPress.Security.NonceVerification.Missing, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized, WordPress.Security.ValidatedSanitizedInput.MissingUnslash -- Nonce verified in self::verify()
         $topics  = array_map( 'absint', (array) ( $_POST['topics'] ?? array() ) );
 
-        $min_q = (int) CC_QA_Admin::get( 'cc_qa_min_question_length' );
+        $min_q = (int) Wanswers_Admin::get( 'wanswers_min_question_length' );
         if ( strlen( $title ) < $min_q ) {
             /* translators: %d: minimum character count */
-            wp_send_json_error( array( 'message' => sprintf( __( 'Question title must be at least %d characters.', 'wanswers' ), $min_q ) ) );
+            wp_send_json_error( array( 'message' => sprintf( __( 'Question title must be at least %d characters.', 'wanswers-seo-first-qa' ), $min_q ) ) );
         }
 
         $user = wp_get_current_user();
 
         // Fix: respect the moderation setting instead of always publishing
-        $status  = CC_QA_Admin::get( 'cc_qa_moderate_questions' ) ? 'pending' : 'publish';
+        $status  = Wanswers_Admin::get( 'wanswers_moderate_questions' ) ? 'pending' : 'publish';
 
         $post_id = wp_insert_post( array(
-            'post_type'    => 'cc_question',
+            'post_type'    => 'wanswers_question',
             'post_title'   => $title,
             'post_content' => $content,
             'post_status'  => $status,
@@ -159,30 +159,30 @@ class CC_QA_Ajax {
         }
 
         if ( ! empty( $topics ) ) {
-            wp_set_object_terms( $post_id, $topics, 'cc_question_topic' );
+            wp_set_object_terms( $post_id, $topics, 'wanswers_question_topic' );
         }
 
-        update_post_meta( $post_id, '_cc_qa_votes',        0 );
-        update_post_meta( $post_id, '_cc_qa_answer_count', 0 );
-        update_post_meta( $post_id, '_cc_qa_accepted',     0 );
+        update_post_meta( $post_id, '_wanswers_votes',        0 );
+        update_post_meta( $post_id, '_wanswers_answer_count', 0 );
+        update_post_meta( $post_id, '_wanswers_accepted',     0 );
 
-        CC_QA_Database::subscribe( $post_id, get_current_user_id(), $user->user_email );
+        Wanswers_Database::subscribe( $post_id, get_current_user_id(), $user->user_email );
 
         // Bust leaderboard cache so new question appears in stats
-        CC_QA_Leaderboard::bust_cache();
+        Wanswers_Leaderboard::bust_cache();
 
         // Only notify and render card if published (not pending moderation)
         if ( 'publish' === $status ) {
-            CC_QA_Badges::check_and_award( get_current_user_id(), array( 'question' ) );
-            CC_QA_Email::notify_new_question( $post_id );
+            Wanswers_Badges::check_and_award( get_current_user_id(), array( 'question' ) );
+            Wanswers_Email::notify_new_question( $post_id );
 
             ob_start();
             // Fix: render_question_card() takes only one parameter
-            CC_QA_Shortcode::render_question_card( get_post( $post_id ) );
+            Wanswers_Shortcode::render_question_card( get_post( $post_id ) );
             $html = ob_get_clean();
 
             wp_send_json_success( array(
-                'message'      => __( 'Your question has been posted!', 'wanswers' ),
+                'message'      => __( 'Your question has been posted!', 'wanswers-seo-first-qa' ),
                 'html'         => $html,
                 'post_id'      => $post_id,
                 'question_url' => get_permalink( $post_id ),
@@ -190,7 +190,7 @@ class CC_QA_Ajax {
             ) );
         } else {
             wp_send_json_success( array(
-                'message' => __( 'Your question has been submitted and is pending review.', 'wanswers' ),
+                'message' => __( 'Your question has been submitted and is pending review.', 'wanswers-seo-first-qa' ),
                 'html'    => '',
                 'post_id' => $post_id,
                 'pending' => true,
@@ -209,19 +209,19 @@ class CC_QA_Ajax {
         // phpcs:ignore WordPress.Security.NonceVerification.Missing, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized, WordPress.Security.ValidatedSanitizedInput.MissingUnslash -- Nonce verified in self::verify()
         $content     = self::sanitize_content( wp_unslash( $_POST['content'] ?? '' ) );
 
-        if ( ! $question_id || get_post_type( $question_id ) !== 'cc_question' ) {
-            wp_send_json_error( array( 'message' => __( 'Invalid question.', 'wanswers' ) ) );
+        if ( ! $question_id || get_post_type( $question_id ) !== 'wanswers_question' ) {
+            wp_send_json_error( array( 'message' => __( 'Invalid question.', 'wanswers-seo-first-qa' ) ) );
         }
 
-        $min_a = (int) CC_QA_Admin::get( 'cc_qa_min_answer_length' );
+        $min_a = (int) Wanswers_Admin::get( 'wanswers_min_answer_length' );
         if ( strlen( wp_strip_all_tags( $content ) ) < $min_a ) {
             /* translators: %d: minimum character count */
-            wp_send_json_error( array( 'message' => sprintf( __( 'Answer must be at least %d characters.', 'wanswers' ), $min_a ) ) );
+            wp_send_json_error( array( 'message' => sprintf( __( 'Answer must be at least %d characters.', 'wanswers-seo-first-qa' ), $min_a ) ) );
         }
 
         $user    = wp_get_current_user();
         $post_id = wp_insert_post( array(
-            'post_type'    => 'cc_answer',
+            'post_type'    => 'wanswers_answer',
             'post_title'   => 'Answer to: ' . get_the_title( $question_id ),
             'post_content' => $content,
             'post_status'  => 'publish',
@@ -233,16 +233,16 @@ class CC_QA_Ajax {
             wp_send_json_error( array( 'message' => $post_id->get_error_message() ) );
         }
 
-        update_post_meta( $post_id, '_cc_qa_votes',    0 );
-        update_post_meta( $post_id, '_cc_qa_accepted', 0 );
+        update_post_meta( $post_id, '_wanswers_votes',    0 );
+        update_post_meta( $post_id, '_wanswers_accepted', 0 );
 
-        $count = (int) get_post_meta( $question_id, '_cc_qa_answer_count', true );
-        update_post_meta( $question_id, '_cc_qa_answer_count', $count + 1 );
+        $count = (int) get_post_meta( $question_id, '_wanswers_answer_count', true );
+        update_post_meta( $question_id, '_wanswers_answer_count', $count + 1 );
 
-        CC_QA_Database::subscribe( $question_id, get_current_user_id(), $user->user_email );
-        CC_QA_Email::notify_new_answer( $question_id, $post_id );
-        CC_QA_Badges::check_and_award( get_current_user_id(), array( 'answer' ) );
-        CC_QA_Leaderboard::bust_cache(); // Bust leaderboard cache
+        Wanswers_Database::subscribe( $question_id, get_current_user_id(), $user->user_email );
+        Wanswers_Email::notify_new_answer( $question_id, $post_id );
+        Wanswers_Badges::check_and_award( get_current_user_id(), array( 'answer' ) );
+        Wanswers_Leaderboard::bust_cache(); // Bust leaderboard cache
 
         $current_user_id = get_current_user_id();
         $q_author_id     = (int) get_post_field( 'post_author', $question_id );
@@ -252,11 +252,11 @@ class CC_QA_Ajax {
         $is_q_author = $current_user_id && $current_user_id === $q_author_id;
 
         ob_start();
-        CC_QA_Shortcode::render_answer_card( get_post( $post_id ), $current_user_id, $is_q_author );
+        Wanswers_Shortcode::render_answer_card( get_post( $post_id ), $current_user_id, $is_q_author );
         $html = ob_get_clean();
 
         wp_send_json_success( array(
-            'message'      => __( 'Your answer has been posted!', 'wanswers' ),
+            'message'      => __( 'Your answer has been posted!', 'wanswers-seo-first-qa' ),
             'html'         => $html,
             'answer_id'    => $post_id,
             'answer_count' => $count + 1,
@@ -276,26 +276,26 @@ class CC_QA_Ajax {
         $user_id   = get_current_user_id();
 
         if ( ! $post_id ) {
-            wp_send_json_error( array( 'message' => __( 'Invalid post.', 'wanswers' ) ) );
+            wp_send_json_error( array( 'message' => __( 'Invalid post.', 'wanswers-seo-first-qa' ) ) );
         }
 
         $post = get_post( $post_id );
         if ( $post && (int) $post->post_author === $user_id ) {
-            wp_send_json_error( array( 'message' => __( 'You cannot vote on your own post.', 'wanswers' ) ) );
+            wp_send_json_error( array( 'message' => __( 'You cannot vote on your own post.', 'wanswers-seo-first-qa' ) ) );
         }
 
-        if ( CC_QA_Database::user_voted( $post_id, $user_id ) ) {
-            wp_send_json_error( array( 'message' => __( 'You already voted on this.', 'wanswers' ) ) );
+        if ( Wanswers_Database::user_voted( $post_id, $user_id ) ) {
+            wp_send_json_error( array( 'message' => __( 'You already voted on this.', 'wanswers-seo-first-qa' ) ) );
         }
 
-        $count = CC_QA_Database::add_vote( $post_id, $user_id, $vote_type );
+        $count = Wanswers_Database::add_vote( $post_id, $user_id, $vote_type );
         if ( $count !== false && $vote_type === 1 ) {
             $post_author = (int) get_post_field( 'post_author', $post_id );
             if ( $post_author ) {
-                CC_QA_Badges::check_and_award( $post_author, array( 'vote' ) );
+                Wanswers_Badges::check_and_award( $post_author, array( 'vote' ) );
             }
         }
-        CC_QA_Leaderboard::bust_cache(); // Bust leaderboard cache
+        Wanswers_Leaderboard::bust_cache(); // Bust leaderboard cache
 
         wp_send_json_success( array(
             'count'   => $count,
@@ -314,29 +314,29 @@ class CC_QA_Ajax {
         $user_id     = get_current_user_id();
 
         if ( ! $answer_id || ! $question_id ) {
-            wp_send_json_error( array( 'message' => __( 'Invalid answer.', 'wanswers' ) ) );
+            wp_send_json_error( array( 'message' => __( 'Invalid answer.', 'wanswers-seo-first-qa' ) ) );
         }
 
         $q_author = (int) get_post_field( 'post_author', $question_id );
         if ( $q_author !== $user_id && ! current_user_can( 'edit_others_posts' ) ) {
-            wp_send_json_error( array( 'message' => __( 'Only the question author can accept an answer.', 'wanswers' ) ) );
+            wp_send_json_error( array( 'message' => __( 'Only the question author can accept an answer.', 'wanswers-seo-first-qa' ) ) );
         }
 
         $a_author = (int) get_post_field( 'post_author', $answer_id );
         if ( $a_author === $user_id && ! current_user_can( 'edit_others_posts' ) ) {
-            wp_send_json_error( array( 'message' => __( 'You cannot accept your own answer.', 'wanswers' ) ) );
+            wp_send_json_error( array( 'message' => __( 'You cannot accept your own answer.', 'wanswers-seo-first-qa' ) ) );
         }
 
-        $prev = get_post_meta( $question_id, '_cc_qa_accepted_answer', true );
+        $prev = get_post_meta( $question_id, '_wanswers_accepted_answer', true );
         if ( $prev ) {
-            update_post_meta( (int) $prev, '_cc_qa_accepted', 0 );
+            update_post_meta( (int) $prev, '_wanswers_accepted', 0 );
         }
 
-        update_post_meta( $answer_id,   '_cc_qa_accepted',        1 );
-        update_post_meta( $question_id, '_cc_qa_accepted_answer', $answer_id );
-        update_post_meta( $question_id, '_cc_qa_accepted',        1 );
-        CC_QA_Badges::check_and_award( $a_author, array( 'accepted' ) );
-        CC_QA_Leaderboard::bust_cache(); // Bust leaderboard cache
+        update_post_meta( $answer_id,   '_wanswers_accepted',        1 );
+        update_post_meta( $question_id, '_wanswers_accepted_answer', $answer_id );
+        update_post_meta( $question_id, '_wanswers_accepted',        1 );
+        Wanswers_Badges::check_and_award( $a_author, array( 'accepted' ) );
+        Wanswers_Leaderboard::bust_cache(); // Bust leaderboard cache
 
         wp_send_json_success( array(
             'answer_id'   => $answer_id,
@@ -353,17 +353,17 @@ class CC_QA_Ajax {
         $post_id = absint( $_POST['post_id'] ?? 0 );
         $post    = get_post( $post_id );
 
-        if ( ! $post || $post->post_type !== 'cc_question' ) {
-            wp_send_json_error( array( 'message' => __( 'Invalid question.', 'wanswers' ) ) );
+        if ( ! $post || $post->post_type !== 'wanswers_question' ) {
+            wp_send_json_error( array( 'message' => __( 'Invalid question.', 'wanswers-seo-first-qa' ) ) );
         }
 
         $user_id = get_current_user_id();
         if ( (int) $post->post_author !== $user_id && ! current_user_can( 'delete_others_posts' ) ) {
-            wp_send_json_error( array( 'message' => __( 'Permission denied.', 'wanswers' ) ) );
+            wp_send_json_error( array( 'message' => __( 'Permission denied.', 'wanswers-seo-first-qa' ) ) );
         }
 
         $answers = get_posts( array(
-            'post_type'   => 'cc_answer',
+            'post_type'   => 'wanswers_answer',
             'post_parent' => $post_id,
             'numberposts' => -1,
             'fields'      => 'ids',
@@ -373,7 +373,7 @@ class CC_QA_Ajax {
         }
 
         wp_delete_post( $post_id, true );
-        CC_QA_Leaderboard::bust_cache();
+        Wanswers_Leaderboard::bust_cache();
 
         wp_send_json_success( array( 'post_id' => $post_id ) );
     }
@@ -387,21 +387,21 @@ class CC_QA_Ajax {
         $answer_id = absint( $_POST['answer_id'] ?? 0 );
         $post      = get_post( $answer_id );
 
-        if ( ! $post || $post->post_type !== 'cc_answer' ) {
-            wp_send_json_error( array( 'message' => __( 'Invalid answer.', 'wanswers' ) ) );
+        if ( ! $post || $post->post_type !== 'wanswers_answer' ) {
+            wp_send_json_error( array( 'message' => __( 'Invalid answer.', 'wanswers-seo-first-qa' ) ) );
         }
 
         $user_id = get_current_user_id();
         if ( (int) $post->post_author !== $user_id && ! current_user_can( 'delete_others_posts' ) ) {
-            wp_send_json_error( array( 'message' => __( 'Permission denied.', 'wanswers' ) ) );
+            wp_send_json_error( array( 'message' => __( 'Permission denied.', 'wanswers-seo-first-qa' ) ) );
         }
 
         $question_id = (int) $post->post_parent;
         wp_delete_post( $answer_id, true );
 
-        $count = max( 0, (int) get_post_meta( $question_id, '_cc_qa_answer_count', true ) - 1 );
-        update_post_meta( $question_id, '_cc_qa_answer_count', $count );
-        CC_QA_Leaderboard::bust_cache();
+        $count = max( 0, (int) get_post_meta( $question_id, '_wanswers_answer_count', true ) - 1 );
+        update_post_meta( $question_id, '_wanswers_answer_count', $count );
+        Wanswers_Leaderboard::bust_cache();
 
         wp_send_json_success( array(
             'answer_id'    => $answer_id,
@@ -422,14 +422,14 @@ class CC_QA_Ajax {
         // phpcs:ignore WordPress.Security.NonceVerification.Missing, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized, WordPress.Security.ValidatedSanitizedInput.MissingUnslash -- Nonce verified in self::verify()
         $search = sanitize_text_field( wp_unslash( $_POST['search'] ?? '' ) );
 
-        $args  = CC_QA_Shortcode::build_question_query( $page, $topic, $sort, $search );
+        $args  = Wanswers_Shortcode::build_question_query( $page, $topic, $sort, $search );
         $query = new WP_Query( $args );
 
         ob_start();
         if ( $query->have_posts() ) {
             while ( $query->have_posts() ) {
                 $query->the_post();
-                CC_QA_Shortcode::render_question_card( get_post() );
+                Wanswers_Shortcode::render_question_card( get_post() );
             }
             wp_reset_postdata();
         }
@@ -455,15 +455,15 @@ class CC_QA_Ajax {
         $user_id     = get_current_user_id();
 
         $args = array(
-            'post_type'      => 'cc_answer',
+            'post_type'      => 'wanswers_answer',
             'post_parent'    => $question_id,
             'post_status'    => 'publish',
-            'posts_per_page' => (int) CC_QA_Admin::get( 'cc_qa_answers_per_page' ),
+            'posts_per_page' => (int) Wanswers_Admin::get( 'wanswers_answers_per_page' ),
             'paged'          => $page,
         );
 
         if ( $sort === 'votes' ) {
-            $args['meta_key'] = '_cc_qa_votes';
+            $args['meta_key'] = '_wanswers_votes';
             $args['orderby']  = 'meta_value_num';
             $args['order']    = 'DESC';
         } else {
@@ -481,7 +481,7 @@ class CC_QA_Ajax {
         if ( $query->have_posts() ) {
             while ( $query->have_posts() ) {
                 $query->the_post();
-                CC_QA_Shortcode::render_answer_card( get_post(), $user_id, $is_q_author );
+                Wanswers_Shortcode::render_answer_card( get_post(), $user_id, $is_q_author );
             }
             wp_reset_postdata();
         }
@@ -503,18 +503,18 @@ class CC_QA_Ajax {
         // phpcs:ignore WordPress.Security.NonceVerification.Missing, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized, WordPress.Security.ValidatedSanitizedInput.MissingUnslash -- Nonce verified in self::verify()
         $content   = self::sanitize_content( wp_unslash( $_POST['content'] ?? '' ) );
 
-        if ( ! $answer_id || get_post_type( $answer_id ) !== 'cc_answer' ) {
-            wp_send_json_error( array( 'message' => __( 'Invalid answer.', 'wanswers' ) ) );
+        if ( ! $answer_id || get_post_type( $answer_id ) !== 'wanswers_answer' ) {
+            wp_send_json_error( array( 'message' => __( 'Invalid answer.', 'wanswers-seo-first-qa' ) ) );
         }
 
         if ( strlen( wp_strip_all_tags( $content ) ) < 2 ) {
-            wp_send_json_error( array( 'message' => __( 'Reply is too short.', 'wanswers' ) ) );
+            wp_send_json_error( array( 'message' => __( 'Reply is too short.', 'wanswers-seo-first-qa' ) ) );
         }
 
         $user        = wp_get_current_user();
         $question_id = (int) get_post_field( 'post_parent', $answer_id );
 
-        $replies              = get_post_meta( $answer_id, '_cc_qa_replies', true ) ?: array();
+        $replies              = get_post_meta( $answer_id, '_wanswers_replies', true ) ?: array();
         $reply_id             = uniqid( 'r', true );
         $replies[ $reply_id ] = array(
             'id'         => $reply_id,
@@ -524,17 +524,53 @@ class CC_QA_Ajax {
             'created_at' => gmdate( 'Y-m-d H:i:s' ),
             'time_diff'  => 'just now',
         );
-        update_post_meta( $answer_id, '_cc_qa_replies', $replies );
+        update_post_meta( $answer_id, '_wanswers_replies', $replies );
 
-        CC_QA_Email::notify_new_reply( $question_id, $answer_id, $content, $user );
+        Wanswers_Email::notify_new_reply( $question_id, $answer_id, $content, $user );
 
         ob_start();
-        CC_QA_Shortcode::render_reply( $reply_id, $replies[ $reply_id ], $answer_id, get_current_user_id() );
+        Wanswers_Shortcode::render_reply( $reply_id, $replies[ $reply_id ], $answer_id, get_current_user_id() );
         $html = ob_get_clean();
 
         wp_send_json_success( array(
             'html'     => $html,
             'reply_id' => $reply_id,
+        ) );
+    }
+
+    /* ── Delete Reply ── */
+    public static function handle_delete_reply() {
+        self::verify();
+        self::require_login();
+
+        // phpcs:ignore WordPress.Security.NonceVerification.Missing, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized, WordPress.Security.ValidatedSanitizedInput.MissingUnslash -- Nonce verified in self::verify()
+        $answer_id = absint( $_POST['answer_id'] ?? 0 );
+        // phpcs:ignore WordPress.Security.NonceVerification.Missing, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized, WordPress.Security.ValidatedSanitizedInput.MissingUnslash -- Nonce verified in self::verify()
+        $reply_id  = sanitize_text_field( wp_unslash( $_POST['reply_id'] ?? '' ) );
+        $user_id   = get_current_user_id();
+
+        if ( ! $answer_id || get_post_type( $answer_id ) !== 'wanswers_answer' ) {
+            wp_send_json_error( array( 'message' => __( 'Invalid answer.', 'wanswers-seo-first-qa' ) ) );
+        }
+
+        $replies = get_post_meta( $answer_id, '_wanswers_replies', true ) ?: array();
+
+        if ( ! isset( $replies[ $reply_id ] ) ) {
+            wp_send_json_error( array( 'message' => __( 'Reply not found.', 'wanswers-seo-first-qa' ) ) );
+        }
+
+        $reply = $replies[ $reply_id ];
+
+        if ( (int) $reply['user_id'] !== $user_id && ! current_user_can( 'delete_others_posts' ) ) {
+            wp_send_json_error( array( 'message' => __( 'Permission denied.', 'wanswers-seo-first-qa' ) ), 403 );
+        }
+
+        unset( $replies[ $reply_id ] );
+        update_post_meta( $answer_id, '_wanswers_replies', $replies );
+
+        wp_send_json_success( array(
+            'reply_id'  => $reply_id,
+            'answer_id' => $answer_id,
         ) );
     }
 
@@ -547,13 +583,13 @@ class CC_QA_Ajax {
         $post_id = absint( $_POST['post_id'] ?? 0 );
         $post    = get_post( $post_id );
 
-        if ( ! $post || $post->post_type !== 'cc_question' ) {
-            wp_send_json_error( array( 'message' => __( 'Invalid question.', 'wanswers' ) ) );
+        if ( ! $post || $post->post_type !== 'wanswers_question' ) {
+            wp_send_json_error( array( 'message' => __( 'Invalid question.', 'wanswers-seo-first-qa' ) ) );
         }
 
-        $perms = CC_QA_Shortcode::get_edit_permissions( $post );
+        $perms = Wanswers_Shortcode::get_edit_permissions( $post );
         if ( ! $perms['can_edit'] ) {
-            wp_send_json_error( array( 'message' => __( 'You can no longer edit this question (1-hour window has passed).', 'wanswers' ) ), 403 );
+            wp_send_json_error( array( 'message' => __( 'You can no longer edit this question (1-hour window has passed).', 'wanswers-seo-first-qa' ) ), 403 );
         }
 
         // phpcs:ignore WordPress.Security.NonceVerification.Missing, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized, WordPress.Security.ValidatedSanitizedInput.MissingUnslash -- Nonce verified in self::verify()
@@ -561,10 +597,10 @@ class CC_QA_Ajax {
         // phpcs:ignore WordPress.Security.NonceVerification.Missing, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized, WordPress.Security.ValidatedSanitizedInput.MissingUnslash -- Nonce verified in self::verify()
         $content = self::sanitize_content( wp_unslash( $_POST['content'] ?? '' ) );
 
-        $min_q = (int) CC_QA_Admin::get( 'cc_qa_min_question_length' );
+        $min_q = (int) Wanswers_Admin::get( 'wanswers_min_question_length' );
         if ( strlen( $title ) < $min_q ) {
             /* translators: %d: minimum character count */
-            wp_send_json_error( array( 'message' => sprintf( __( 'Question title must be at least %d characters.', 'wanswers' ), $min_q ) ) );
+            wp_send_json_error( array( 'message' => sprintf( __( 'Question title must be at least %d characters.', 'wanswers-seo-first-qa' ), $min_q ) ) );
         }
 
         wp_update_post( array(
@@ -590,22 +626,22 @@ class CC_QA_Ajax {
         $post_id = absint( $_POST['post_id'] ?? 0 );
         $post    = get_post( $post_id );
 
-        if ( ! $post || $post->post_type !== 'cc_answer' ) {
-            wp_send_json_error( array( 'message' => __( 'Invalid answer.', 'wanswers' ) ) );
+        if ( ! $post || $post->post_type !== 'wanswers_answer' ) {
+            wp_send_json_error( array( 'message' => __( 'Invalid answer.', 'wanswers-seo-first-qa' ) ) );
         }
 
-        $perms = CC_QA_Shortcode::get_edit_permissions( $post );
+        $perms = Wanswers_Shortcode::get_edit_permissions( $post );
         if ( ! $perms['can_edit'] ) {
-            wp_send_json_error( array( 'message' => __( 'You can no longer edit this answer (1-hour window has passed).', 'wanswers' ) ), 403 );
+            wp_send_json_error( array( 'message' => __( 'You can no longer edit this answer (1-hour window has passed).', 'wanswers-seo-first-qa' ) ), 403 );
         }
 
         // phpcs:ignore WordPress.Security.NonceVerification.Missing, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized, WordPress.Security.ValidatedSanitizedInput.MissingUnslash -- Nonce verified in self::verify()
         $content = self::sanitize_content( wp_unslash( $_POST['content'] ?? '' ) );
 
-        $min_a = (int) CC_QA_Admin::get( 'cc_qa_min_answer_length' );
+        $min_a = (int) Wanswers_Admin::get( 'wanswers_min_answer_length' );
         if ( strlen( wp_strip_all_tags( $content ) ) < $min_a ) {
             /* translators: %d: minimum character count */
-            wp_send_json_error( array( 'message' => sprintf( __( 'Answer must be at least %d characters.', 'wanswers' ), $min_a ) ) );
+            wp_send_json_error( array( 'message' => sprintf( __( 'Answer must be at least %d characters.', 'wanswers-seo-first-qa' ), $min_a ) ) );
         }
 
         wp_update_post( array(
@@ -633,30 +669,30 @@ class CC_QA_Ajax {
         $user_id   = get_current_user_id();
 
         if ( strlen( wp_strip_all_tags( $content ) ) < 2 ) {
-            wp_send_json_error( array( 'message' => __( 'Reply is too short.', 'wanswers' ) ) );
+            wp_send_json_error( array( 'message' => __( 'Reply is too short.', 'wanswers-seo-first-qa' ) ) );
         }
 
-        $replies = get_post_meta( $answer_id, '_cc_qa_replies', true ) ?: array();
+        $replies = get_post_meta( $answer_id, '_wanswers_replies', true ) ?: array();
 
         if ( ! isset( $replies[ $reply_id ] ) ) {
-            wp_send_json_error( array( 'message' => __( 'Reply not found.', 'wanswers' ) ) );
+            wp_send_json_error( array( 'message' => __( 'Reply not found.', 'wanswers-seo-first-qa' ) ) );
         }
 
         $reply = $replies[ $reply_id ];
 
         if ( (int) $reply['user_id'] !== $user_id && ! current_user_can( 'delete_others_posts' ) ) {
-            wp_send_json_error( array( 'message' => __( 'Permission denied.', 'wanswers' ) ), 403 );
+            wp_send_json_error( array( 'message' => __( 'Permission denied.', 'wanswers-seo-first-qa' ) ), 403 );
         }
 
         // Enforce 1-hour window (admins bypass)
         if ( ! current_user_can( 'delete_others_posts' ) && ! empty( $reply['created_at'] ) ) {
             if ( ( time() - strtotime( $reply['created_at'] ) ) >= HOUR_IN_SECONDS ) {
-                wp_send_json_error( array( 'message' => __( 'The 1-hour edit window for this reply has passed.', 'wanswers' ) ), 403 );
+                wp_send_json_error( array( 'message' => __( 'The 1-hour edit window for this reply has passed.', 'wanswers-seo-first-qa' ) ), 403 );
             }
         }
 
         $replies[ $reply_id ]['content'] = $content;
-        update_post_meta( $answer_id, '_cc_qa_replies', $replies );
+        update_post_meta( $answer_id, '_wanswers_replies', $replies );
 
         wp_send_json_success( array(
             'reply_id' => $reply_id,

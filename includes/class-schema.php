@@ -1,9 +1,9 @@
 <?php
 if ( ! defined( 'ABSPATH' ) ) exit;
-if ( class_exists( 'CC_QA_Schema' ) ) return;
+if ( class_exists( 'Wanswers_Schema' ) ) return;
 
 /**
- * CC_QA_Schema
+ * Wanswers_Schema
  *
  * JSON-LD structured data:
  *   - Single question pages  → QAPage (one Question per page — Google spec)
@@ -18,14 +18,14 @@ if ( class_exists( 'CC_QA_Schema' ) ) return;
  *   - Speakable on single question pages (voice / AI GEO signal)
  *   - rel="prev" / rel="next" pagination on archive pages
  */
-class CC_QA_Schema {
+class Wanswers_Schema {
 
     public static function init(): void {
         // Noindex always runs (separate from schema output)
         add_action( 'wp_head', array( __CLASS__, 'output_noindex'         ), 1 );
 
         // Allow users to disable all schema output (e.g. when using RankMath/Yoast)
-        if ( CC_QA_Admin::get( 'cc_qa_disable_schema' ) ) {
+        if ( Wanswers_Admin::get( 'wanswers_disable_schema' ) ) {
             return;
         }
 
@@ -40,7 +40,7 @@ class CC_QA_Schema {
 
     private static function json( array $schema ): void {
         echo '<script type="application/ld+json">'
-            . wp_json_encode( $schema, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE )
+            . wp_json_encode( $schema )
             . '</script>' . "\n";
     }
 
@@ -53,11 +53,11 @@ class CC_QA_Schema {
     /* ── 0. Noindex shortcode pages (duplicate content prevention) ── */
     public static function output_noindex(): void {
         global $post;
-        if ( ! CC_QA_Admin::get( 'cc_qa_noindex_shortcode' ) ) return;
+        if ( ! Wanswers_Admin::get( 'wanswers_noindex_shortcode' ) ) return;
         if ( ! is_a( $post, 'WP_Post' ) ) return;
-        if ( is_post_type_archive( 'cc_question' ) ) return; // Never noindex the CPT archive itself
-        if ( has_shortcode( $post->post_content, 'cc_qa' ) ) {
-            echo '<meta name="robots" content="noindex, follow">' . "\n";
+        if ( is_post_type_archive( 'wanswers_question' ) ) return; // Never noindex the CPT archive itself
+        if ( has_shortcode( $post->post_content, 'wanswers_qa' ) ) {
+            echo wp_kses( '<meta name="robots" content="noindex, follow">' . "\n", array( 'meta' => array( 'name' => true, 'content' => true ) ) );
         }
     }
 
@@ -102,29 +102,29 @@ class CC_QA_Schema {
 
     /* ── 3. Single question — QAPage + OG + Twitter + Breadcrumb + Speakable ── */
     public static function output_single_schema(): void {
-        if ( ! is_singular( 'cc_question' ) ) return;
+        if ( ! is_singular( 'wanswers_question' ) ) return;
 
         $question_id = get_the_ID();
         $question    = get_post( $question_id );
         if ( ! $question ) return;
 
-        $a_count   = (int) get_post_meta( $question_id, '_cc_qa_answer_count', true );
-        $votes     = (int) get_post_meta( $question_id, '_cc_qa_votes', true );
+        $a_count   = (int) get_post_meta( $question_id, '_wanswers_answer_count', true );
+        $votes     = (int) get_post_meta( $question_id, '_wanswers_votes', true );
         $q_url     = get_permalink( $question_id );
         $q_title   = get_the_title( $question_id );
         $q_text    = wp_strip_all_tags( $question->post_content );
         $q_excerpt = wp_trim_words( $q_text ?: $q_title, 30, '...' );
         $modified  = get_the_modified_date( 'c', $question );
         $created   = get_the_date( 'c', $question );
-        $topics    = wp_get_object_terms( $question_id, 'cc_question_topic' );
+        $topics    = wp_get_object_terms( $question_id, 'wanswers_question_topic' );
 
         // Fetch top answers
         $answers = get_posts( array(
-            'post_type'      => 'cc_answer',
+            'post_type'      => 'wanswers_answer',
             'post_parent'    => $question_id,
             'post_status'    => 'publish',
             'posts_per_page' => 10,
-            'meta_key'       => '_cc_qa_votes',
+            'meta_key'       => '_wanswers_votes',
             'orderby'        => 'meta_value_num',
             'order'          => 'DESC',
         ) );
@@ -133,8 +133,8 @@ class CC_QA_Schema {
         $accepted_schema = null;
 
         foreach ( $answers as $a ) {
-            $a_votes    = (int) get_post_meta( $a->ID, '_cc_qa_votes', true );
-            $a_accepted = (bool) get_post_meta( $a->ID, '_cc_qa_accepted', true );
+            $a_votes    = (int) get_post_meta( $a->ID, '_wanswers_votes', true );
+            $a_accepted = (bool) get_post_meta( $a->ID, '_wanswers_accepted', true );
 
             $entry = array(
                 '@type'        => 'Answer',
@@ -200,7 +200,7 @@ class CC_QA_Schema {
         // BreadcrumbList
         $crumbs = array(
             array( '@type' => 'ListItem', 'position' => 1, 'name' => 'Home',      'item' => home_url( '/' ) ),
-            array( '@type' => 'ListItem', 'position' => 2, 'name' => 'Questions', 'item' => get_post_type_archive_link( 'cc_question' ) ),
+            array( '@type' => 'ListItem', 'position' => 2, 'name' => 'Questions', 'item' => get_post_type_archive_link( 'wanswers_question' ) ),
         );
         if ( ! empty( $topics ) && ! is_wp_error( $topics ) ) {
             $crumbs[] = array( '@type' => 'ListItem', 'position' => 3, 'name' => $topics[0]->name, 'item' => get_term_link( $topics[0] ) );
@@ -251,10 +251,10 @@ endif; ?>
 
     /* ── 4. Archive + taxonomy pages — CollectionPage ── */
     public static function output_archive_schema(): void {
-        $is_archive  = is_post_type_archive( 'cc_question' );
-        $is_tax      = is_tax( 'cc_question_topic' );
+        $is_archive  = is_post_type_archive( 'wanswers_question' );
+        $is_tax      = is_tax( 'wanswers_question_topic' );
         // Also fire on the front page when homepage mode is active
-        $is_homepage = CC_QA_Admin::get( 'cc_qa_homepage_mode' ) && is_front_page() && is_home();
+        $is_homepage = Wanswers_Admin::get( 'wanswers_homepage_mode' ) && is_front_page() && is_home();
 
         if ( ! $is_archive && ! $is_tax && ! $is_homepage ) return;
 
@@ -262,15 +262,15 @@ endif; ?>
         // When homepage mode is active the canonical URL for the feed is /
         $archive_url = $is_tax
             ? get_term_link( $term )
-            : ( $is_homepage ? home_url( '/' ) : get_post_type_archive_link( 'cc_question' ) );
+            : ( $is_homepage ? home_url( '/' ) : get_post_type_archive_link( 'wanswers_question' ) );
 
         // Use admin-controlled strings for the main archive; taxonomy gets auto-generated strings
-        $admin_title = CC_QA_Admin::get( 'cc_qa_archive_title' )    ?: 'Community Q&A';
-        $admin_desc  = CC_QA_Admin::get( 'cc_qa_archive_meta_desc' )
-                    ?: CC_QA_Admin::get( 'cc_qa_archive_subtitle' )
+        $admin_title = Wanswers_Admin::get( 'wanswers_archive_title' )    ?: 'Community Q&A';
+        $admin_desc  = Wanswers_Admin::get( 'wanswers_archive_meta_desc' )
+                    ?: Wanswers_Admin::get( 'wanswers_archive_subtitle' )
                     ?: get_bloginfo( 'description' )
                     ?: 'Community Q&A — ask questions and get answers.';
-        $admin_seo   = CC_QA_Admin::get( 'cc_qa_archive_seo_title' ) ?: '';
+        $admin_seo   = Wanswers_Admin::get( 'wanswers_archive_seo_title' ) ?: '';
 
         $name = $is_tax
             ? $term->name . ' Questions — ' . get_bloginfo( 'name' )
@@ -293,7 +293,7 @@ endif; ?>
         // BreadcrumbList
         $crumbs = array(
             array( '@type' => 'ListItem', 'position' => 1, 'name' => 'Home',      'item' => home_url( '/' ) ),
-            array( '@type' => 'ListItem', 'position' => 2, 'name' => 'Questions', 'item' => get_post_type_archive_link( 'cc_question' ) ),
+            array( '@type' => 'ListItem', 'position' => 2, 'name' => 'Questions', 'item' => get_post_type_archive_link( 'wanswers_question' ) ),
         );
         if ( $is_tax ) {
             $crumbs[] = array( '@type' => 'ListItem', 'position' => 3, 'name' => $term->name, 'item' => get_term_link( $term ) );
@@ -320,7 +320,7 @@ endif; ?>
     /* ── 5. Shortcode page — CollectionPage ── */
     public static function output_shortcode_schema(): void {
         global $post;
-        if ( ! is_a( $post, 'WP_Post' ) || ! has_shortcode( $post->post_content, 'cc_qa' ) ) return;
+        if ( ! is_a( $post, 'WP_Post' ) || ! has_shortcode( $post->post_content, 'wanswers_qa' ) ) return;
 
         self::json( array(
             '@context'    => 'https://schema.org',

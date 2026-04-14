@@ -5,7 +5,7 @@
 ( () => {
   'use strict';
 
-  const cfg = window.CC_QA || {};
+  const cfg = window.WANSWERS || {};
   const { ajax_url, nonce, logged_in, login_url, strings } = cfg;
 
   /* ─────────────────────────────────────
@@ -99,7 +99,7 @@
 
         setLoading( submitBtn, true );
         try {
-          const res = await ajax( 'cc_qa_submit_question', { title, content, 'topics[]': topics } );
+          const res = await ajax( 'wanswers_submit_question', { title, content, 'topics[]': topics } );
           if ( res.success ) {
             toast( res.data.message, 'success' );
             if ( res.data.question_url ) {
@@ -140,7 +140,7 @@
 
       setLoading( submitBtn, true );
       try {
-        const res = await ajax( 'cc_qa_submit_answer', { question_id: questionId, content } );
+        const res = await ajax( 'wanswers_submit_answer', { question_id: questionId, content } );
         if ( res.success ) {
           toast( res.data.message, 'success' );
           const list = document.getElementById( `answers-list-${questionId}` );
@@ -180,7 +180,7 @@
         const postId   = btn.dataset.postId;
         const voteType = btn.dataset.vote || '1';
         try {
-          const res = await ajax( 'cc_qa_vote', { post_id: postId, vote_type: voteType } );
+          const res = await ajax( 'wanswers_vote', { post_id: postId, vote_type: voteType } );
           if ( res.success ) {
             toast( strings.vote_thanks, 'success' );
             $$( `#votes-${postId}` ).forEach( el => ( el.textContent = res.data.count ) );
@@ -207,7 +207,7 @@
         const answerId = btn.dataset.answerId;
         setLoading( btn, true );
         try {
-          const res = await ajax( 'cc_qa_accept_answer', { answer_id: answerId } );
+          const res = await ajax( 'wanswers_accept_answer', { answer_id: answerId } );
           if ( res.success ) {
             toast( 'Answer accepted!', 'success' );
             $$( '.qa-answer-accepted' ).forEach( card => {
@@ -245,7 +245,7 @@
         try {
           let res;
           if ( action === 'delete_question' ) {
-            res = await ajax( 'cc_qa_delete_question', { post_id: postId } );
+            res = await ajax( 'wanswers_delete_question', { post_id: postId } );
             if ( res.success ) {
               toast( 'Question deleted.', 'success' );
               const redirect = btn.dataset.redirect;
@@ -256,7 +256,7 @@
               }
             }
           } else if ( action === 'delete_answer' ) {
-            res = await ajax( 'cc_qa_delete_answer', { answer_id: answerId } );
+            res = await ajax( 'wanswers_delete_answer', { answer_id: answerId } );
             if ( res.success ) {
               document.getElementById( `answer-${answerId}` )?.remove();
               toast( 'Answer deleted.', 'success' );
@@ -292,7 +292,7 @@
     async function reloadFeed() {
       feed.style.opacity = '0.5';
       try {
-        const res = await ajax( 'cc_qa_load_more_questions', {
+        const res = await ajax( 'wanswers_load_more_questions', {
           page: 1, sort: currentSort, topic: currentTopic, search: currentSearch,
         } );
         if ( res.success ) {
@@ -379,7 +379,7 @@
         const maxPages = parseInt( loadBtn.dataset.max,  10 );
         setLoading( loadBtn, true );
         try {
-          const res = await ajax( 'cc_qa_load_more_questions', {
+          const res = await ajax( 'wanswers_load_more_questions', {
             page: nextPage, sort: currentSort, topic: currentTopic, search: currentSearch,
           } );
           if ( res.success ) {
@@ -414,7 +414,7 @@
         btn.classList.add( 'active' );
         list.style.opacity = '0.5';
         try {
-          const res = await ajax( 'cc_qa_load_more_answers', { question_id: questionId, page: 1, sort } );
+          const res = await ajax( 'wanswers_load_more_answers', { question_id: questionId, page: 1, sort } );
           if ( res.success ) {
             list.innerHTML = res.data.html;
             // Reset load-more button state and sync sort
@@ -456,7 +456,7 @@
 
       setLoading( loadBtn, true );
       try {
-        const res = await ajax( 'cc_qa_load_more_answers', { question_id: questionId, page: nextPage, sort } );
+        const res = await ajax( 'wanswers_load_more_answers', { question_id: questionId, page: nextPage, sort } );
         if ( res.success ) {
           list.insertAdjacentHTML( 'beforeend', res.data.html );
           loadBtn.dataset.page = nextPage;
@@ -523,7 +523,7 @@
       if ( ! content || content.length < 2 ) { toast( 'Reply is too short.', 'error' ); textarea?.focus(); return; }
       setLoading( btn, true );
       try {
-        const res = await ajax( 'cc_qa_submit_reply', { answer_id: answerId, content } );
+        const res = await ajax( 'wanswers_submit_reply', { answer_id: answerId, content } );
         if ( res.success ) {
           const section = document.getElementById( `replies-${answerId}` );
           let list = section.querySelector( '.qa-replies-list' );
@@ -570,7 +570,7 @@
       const replyId  = btn.dataset.replyId;
       const answerId = btn.dataset.answerId;
       try {
-        const res = await ajax( 'cc_qa_delete_reply', { reply_id: replyId, answer_id: answerId } );
+        const res = await ajax( 'wanswers_delete_reply', { reply_id: replyId, answer_id: answerId } );
         if ( res.success ) {
           document.getElementById( `reply-${replyId}` )?.remove();
           const toggle = document.querySelector( `.qa-reply-toggle[data-answer-id="${answerId}"]` );
@@ -661,7 +661,7 @@
       if ( ! content )                      { toast( 'Content cannot be empty.', 'error' ); return; }
 
       setLoading( saveBtn, true );
-      const action = type === 'question' ? 'cc_qa_edit_question' : 'cc_qa_edit_answer';
+      const action = type === 'question' ? 'wanswers_edit_question' : 'wanswers_edit_answer';
       const data   = type === 'question' ? { post_id: postId, title, content } : { post_id: postId, content };
 
       ajax( action, data ).then( res => {
@@ -741,7 +741,7 @@
       if ( ! newContent ) { toast( 'Reply cannot be empty.', 'error' ); return; }
 
       setLoading( saveBtn, true );
-      ajax( 'cc_qa_edit_reply', { reply_id: replyId, answer_id: answerId, content: newContent } )
+      ajax( 'wanswers_edit_reply', { reply_id: replyId, answer_id: answerId, content: newContent } )
         .then( res => {
           setLoading( saveBtn, false );
           if ( ! res.success ) { toast( res.data?.message || strings.error, 'error' ); return; }

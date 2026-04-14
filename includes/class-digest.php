@@ -5,17 +5,17 @@
  * Sends a weekly summary of top questions and their best answers
  * to every subscriber. Includes a global unsubscribe link (token-based).
  *
- * Cron event:  cc_qa_weekly_digest
+ * Cron event:  wanswers_weekly_digest
  * Schedule:    Weekly (runs every 7 days, offset to next chosen weekday at 9am site time)
  */
 
 if ( ! defined( 'ABSPATH' ) ) exit;
 
-if ( class_exists( 'CC_QA_Digest' ) ) return;
+if ( class_exists( 'Wanswers_Digest' ) ) return;
 
-class CC_QA_Digest {
+class Wanswers_Digest {
 
-    const CRON_HOOK = 'cc_qa_weekly_digest';
+    const CRON_HOOK = 'wanswers_weekly_digest';
 
     public static function init() {
         add_action( self::CRON_HOOK, array( __CLASS__, 'send' ) );
@@ -24,11 +24,11 @@ class CC_QA_Digest {
     /* ── Scheduling ─────────────────────────────────────────────── */
 
     public static function schedule() {
-        if ( ! CC_QA_Admin::get( 'cc_qa_digest_enabled' ) ) return;
+        if ( ! Wanswers_Admin::get( 'wanswers_digest_enabled' ) ) return;
         if ( wp_next_scheduled( self::CRON_HOOK ) ) return;
 
         // Schedule for next occurrence of the chosen weekday at 09:00 site time
-        $day_name  = CC_QA_Admin::get( 'cc_qa_digest_day' ) ?: 'monday';
+        $day_name  = Wanswers_Admin::get( 'wanswers_digest_day' ) ?: 'monday';
         $site_tz   = get_option( 'timezone_string' ) ?: 'UTC';
         try {
             $tz   = new DateTimeZone( $site_tz );
@@ -48,7 +48,7 @@ class CC_QA_Digest {
 
     /**
      * Reschedule when admin changes day-of-week or toggled on.
-     * Called by CC_QA_Admin after saving settings.
+     * Called by Wanswers_Admin after saving settings.
      */
     public static function reschedule() {
         self::unschedule();
@@ -58,12 +58,12 @@ class CC_QA_Digest {
     /* ── Main send method ──────────────────────────────────────── */
 
     public static function send() {
-        if ( ! CC_QA_Admin::get( 'cc_qa_digest_enabled' ) ) return;
+        if ( ! Wanswers_Admin::get( 'wanswers_digest_enabled' ) ) return;
 
         $top_questions = self::get_top_questions( 5 );
         if ( empty( $top_questions ) ) return;
 
-        $subscribers = CC_QA_Database::get_digest_subscribers();
+        $subscribers = Wanswers_Database::get_digest_subscribers();
         if ( empty( $subscribers ) ) return;
 
         $site_name = get_bloginfo( 'name' );
@@ -71,28 +71,28 @@ class CC_QA_Digest {
         $subject   = "[{$site_name}] This Week's Top Questions";
         $body_html = self::build_digest_html( $top_questions, $site_name, $site_url );
 
-        $max  = (int) CC_QA_Admin::get( 'cc_qa_email_max_recipients' );
+        $max  = (int) Wanswers_Admin::get( 'wanswers_email_max_recipients' );
         $sent = 0;
         foreach ( $subscribers as $sub ) {
             if ( $sent >= $max ) break;
             // Build a personalised version with a global-unsubscribe link
-            $unsub_url = CC_QA_Email::get_unsubscribe_url( 0, $sub->token );
+            $unsub_url = Wanswers_Email::get_unsubscribe_url( 0, $sub->token );
             $final     = str_replace( '{{UNSUB_URL}}', esc_url( $unsub_url ), $body_html );
             self::send_email( $sub->email, $subject, $final );
             $sent++;
         }
 
-        update_option( 'cc_qa_digest_last_sent', gmdate( 'Y-m-d H:i:s' ) );
+        update_option( 'wanswers_digest_last_sent', gmdate( 'Y-m-d H:i:s' ) );
     }
 
     /* ── Query ─────────────────────────────────────────────────── */
 
     private static function get_top_questions( $count = 5 ) {
         return get_posts( array(
-            'post_type'      => 'cc_question',
+            'post_type'      => 'wanswers_question',
             'post_status'    => 'publish',
             'posts_per_page' => $count,
-            'meta_key'       => '_cc_qa_votes',
+            'meta_key'       => '_wanswers_votes',
             'orderby'        => 'meta_value_num',
             'order'          => 'DESC',
             'date_query'     => array( array( 'after' => '7 days ago' ) ),
@@ -112,17 +112,17 @@ class CC_QA_Digest {
         $rows = '';
         foreach ( $questions as $q ) {
             $q_url   = get_permalink( $q->ID );
-            $votes   = (int) get_post_meta( $q->ID, '_cc_qa_votes', true );
-            $a_count = (int) get_post_meta( $q->ID, '_cc_qa_answer_count', true );
-            $q_author = CC_QA_Shortcode::get_author_display( $q->post_author );
+            $votes   = (int) get_post_meta( $q->ID, '_wanswers_votes', true );
+            $a_count = (int) get_post_meta( $q->ID, '_wanswers_answer_count', true );
+            $q_author = Wanswers_Shortcode::get_author_display( $q->post_author );
 
             // Grab top answer
             $top_answers = get_posts( array(
-                'post_type'      => 'cc_answer',
+                'post_type'      => 'wanswers_answer',
                 'post_parent'    => $q->ID,
                 'post_status'    => 'publish',
                 'posts_per_page' => 1,
-                'meta_key'       => '_cc_qa_votes',
+                'meta_key'       => '_wanswers_votes',
                 'orderby'        => 'meta_value_num',
                 'order'          => 'DESC',
             ) );
@@ -146,12 +146,12 @@ class CC_QA_Digest {
                         <td style='font-size:12px;color:#9A9890;padding-bottom:10px;'>
                           Asked by <strong>" . esc_html( $q_author->name ) . "</strong>
                           &nbsp;·&nbsp; {$votes} votes
-                          &nbsp;·&nbsp; {$a_count} " . _n( 'answer', 'answers', $a_count, 'wanswers' ) . "
+                          &nbsp;·&nbsp; {$a_count} " . _n( 'answer', 'answers', $a_count, 'wanswers-seo-first-qa' ) . "
                         </td>
                       </tr>";
 
             if ( $top_answer ) {
-                $ans_author = CC_QA_Shortcode::get_author_display( $top_answer->post_author );
+                $ans_author = Wanswers_Shortcode::get_author_display( $top_answer->post_author );
                 $excerpt    = wp_trim_words( wp_strip_all_tags( $top_answer->post_content ), 30, '…' );
                 $rows .= "
                       <tr>

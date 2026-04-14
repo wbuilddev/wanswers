@@ -4,7 +4,7 @@ Tags: q&a, community, questions answers, seo, schema
 Requires at least: 6.0
 Tested up to: 6.9
 Requires PHP: 7.4
-Stable tag: 2.9.3
+Stable tag: 3.0.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -106,11 +106,11 @@ AI search engines like Perplexity, ChatGPT Browse, and Google AI Overviews favou
 
 = Shortcodes =
 
-[cc_qa] - Embed the full Q&A feed on any page.
+[wanswers_qa] - Embed the full Q&A feed on any page.
 
-[cc_qa_leaderboard] - Embed a standalone leaderboard on any page.
+[wanswers_leaderboard] - Embed a standalone leaderboard on any page.
 
-[cc_qa_leaderboard limit="5"] - Show top 5 users per tab (default is 10).
+[wanswers_leaderboard limit="5"] - Show top 5 users per tab (default is 10).
 
 = No External Dependencies =
 
@@ -143,7 +143,7 @@ The plugin JavaScript is vanilla JS with no jQuery requirement. Styles are self-
 
 = Does it work with any theme? =
 
-Yes. The plugin uses its own page templates that call get_header() and get_footer() from your active theme. All styles are self-contained. You can override any template by placing a copy in your theme root folder - for example yourtheme/single-cc_question.php.
+Yes. The plugin uses its own page templates that call get_header() and get_footer() from your active theme. All styles are self-contained. You can override any template by placing a copy in your theme root folder - for example yourtheme/single-wanswers_question.php.
 
 = Will it conflict with Yoast SEO or RankMath? =
 
@@ -151,7 +151,7 @@ No. If either plugin is active, their title and meta description tags take prece
 
 = How do I prevent duplicate content if I use both /questions/ and a shortcode page? =
 
-Enable "Noindex shortcode pages" in Questions > Settings. This adds a noindex meta tag to any page containing the [cc_qa] shortcode so only the CPT archive at /questions/ is indexed. Alternatively, enable Homepage Mode - your Q&A then has only one canonical URL at your site root.
+Enable "Noindex shortcode pages" in Questions > Settings. This adds a noindex meta tag to any page containing the [wanswers_qa] shortcode so only the CPT archive at /questions/ is indexed. Alternatively, enable Homepage Mode - your Q&A then has only one canonical URL at your site root.
 
 = What is Homepage Mode? =
 
@@ -189,11 +189,22 @@ The plugin has not been tested on Multisite installations and is not officially 
 4. Leaderboard sidebar showing top contributors
 5. Admin settings page
 
+== External services ==
+
+= Gravatar =
+
+This plugin uses the Gravatar service to display user profile images on member profile pages. When a user visits a member profile page, the plugin requests an avatar image from Gravatar based on the member's email address (hashed with MD5).
+
+Data sent: an MD5 hash of the user's email address, included in the image URL.
+When: each time a member profile page is loaded.
+Service provider: Automattic Inc.
+Terms of Service: https://automattic.com/tos/
+Privacy Policy: https://automattic.com/privacy/
+
 == Changelog ==
 
 = 2.9.3 =
 * Admin settings CSS moved to enqueued stylesheet (no more inline style block)
-* Custom CSS output now uses wp_add_inline_style instead of raw style tag
 * All admin POST handlers properly sanitized with sanitize_text_field and wp_unslash
 * All user-facing strings wrapped in translation functions for i18n
 * Replaced deprecated current_time('timestamp') with time() throughout
@@ -251,7 +262,6 @@ The plugin has not been tested on Multisite installations and is not officially 
 = 2.6.0 =
 * New setting: leaderboard max users (3 to 50).
 * New setting: sidebar sticky toggle.
-* New setting: custom CSS field.
 * Leaderboard now appears on profile pages with full position awareness.
 * Expanded profile stats: lifetime score, coloured upvote and downvote counts.
 * Topic badge fix: clicking a tag on a question card now activates the AJAX topic filter instead of navigating away.

@@ -130,9 +130,9 @@ wAnswers implements all of these out of the box.
 ## Shortcodes
 
 ```
-[cc_qa]                        Embed the Q&A feed on any page
-[cc_qa_leaderboard]            Embed a standalone leaderboard
-[cc_qa_leaderboard limit="5"]  Show top 5 per tab (default 10)
+[wanswers_qa]                        Embed the Q&A feed on any page
+[wanswers_qa_leaderboard]            Embed a standalone leaderboard
+[wanswers_qa_leaderboard limit="5"]  Show top 5 per tab (default 10)
 ```
 
 ---
@@ -157,11 +157,11 @@ wanswers/
 │   ├── class-leaderboard.php     Leaderboard stats, caching
 │   ├── class-post-types.php      CPT, taxonomy, rewrite rules, routing
 │   ├── class-schema.php          All JSON-LD, OG, Twitter Card, Speakable
-│   └── class-shortcode.php       [cc_qa] shortcode, card rendering
+│   └── class-shortcode.php       [wanswers_qa] shortcode, card rendering
 └── templates/
-    ├── archive-cc_question.php   /questions/
-    ├── author-cc_question.php    /questions/author/{username}/
-    └── single-cc_question.php    /questions/{slug}/
+    ├── archive-wanswers_question.php   /questions/
+    ├── author-wanswers_question.php    /questions/author/{username}/
+    └── single-wanswers_question.php    /questions/{slug}/
 ```
 
 ---

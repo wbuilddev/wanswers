@@ -16,49 +16,55 @@ global $wpdb;
 
 // Drop custom tables
 // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table prefix is trusted core data
-$wpdb->query( "DROP TABLE IF EXISTS `{$wpdb->prefix}cc_qa_votes`" );
+$wpdb->query( "DROP TABLE IF EXISTS `{$wpdb->prefix}wanswers_votes`" );
 // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table prefix is trusted core data
-$wpdb->query( "DROP TABLE IF EXISTS `{$wpdb->prefix}cc_qa_subscriptions`" );
+$wpdb->query( "DROP TABLE IF EXISTS `{$wpdb->prefix}wanswers_subscriptions`" );
 
 // Delete all plugin options
 $options = array(
-    'cc_qa_page_id',
-    'cc_qa_questions_per_page',
-    'cc_qa_answers_per_page',
-    'cc_qa_answers_on_single',
-    'cc_qa_min_question_length',
-    'cc_qa_min_answer_length',
-    'cc_qa_question_title_max',
-    'cc_qa_email_max_recipients',
-    'cc_qa_notify_new_questions',
-    'cc_qa_notify_new_answers',
-    'cc_qa_moderate_questions',
-    'cc_qa_rate_limit_questions',
-    'cc_qa_rate_limit_answers',
-    'cc_qa_rate_limit_votes',
-    'cc_qa_rate_limit_window',
-    'cc_qa_archive_title',
-    'cc_qa_archive_subtitle',
-    'cc_qa_archive_meta_desc',
-    'cc_qa_archive_seo_title',
-    'cc_qa_leaderboard_position',
-    'cc_qa_noindex_shortcode',
-    'cc_qa_digest_enabled',
-    'cc_qa_digest_day',
-    'cc_qa_leaderboard_limit',
-    'cc_qa_sidebar_sticky',
-    'cc_qa_custom_css',
-    'cc_qa_homepage_mode',
-    'cc_qa_footer_credit',
-    'cc_qa_db_version',
-    'cc_qa_leaderboard_reset_date',
+    'wanswers_page_id',
+    'wanswers_questions_per_page',
+    'wanswers_answers_per_page',
+    'wanswers_answers_on_single',
+    'wanswers_min_question_length',
+    'wanswers_min_answer_length',
+    'wanswers_question_title_max',
+    'wanswers_email_max_recipients',
+    'wanswers_notify_new_questions',
+    'wanswers_notify_new_answers',
+    'wanswers_moderate_questions',
+    'wanswers_rate_limit_questions',
+    'wanswers_rate_limit_answers',
+    'wanswers_rate_limit_votes',
+    'wanswers_rate_limit_window',
+    'wanswers_archive_title',
+    'wanswers_archive_subtitle',
+    'wanswers_archive_meta_desc',
+    'wanswers_archive_seo_title',
+    'wanswers_leaderboard_position',
+    'wanswers_noindex_shortcode',
+    'wanswers_digest_enabled',
+    'wanswers_digest_day',
+    'wanswers_leaderboard_limit',
+    'wanswers_sidebar_sticky',
+    'wanswers_homepage_mode',
+    'wanswers_footer_credit',
+    'wanswers_db_version',
+    'wanswers_leaderboard_reset_date',
 );
 foreach ( $options as $option ) {
     delete_option( $option );
 }
+// Migration flag
+delete_option( 'wanswers_migrated_from_cc_qa' );
+// Legacy tables (in case migration ran but old tables lingered)
+// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table prefix is trusted core data
+$wpdb->query( "DROP TABLE IF EXISTS `{$wpdb->prefix}cc_qa_votes`" );
+// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table prefix is trusted core data
+$wpdb->query( "DROP TABLE IF EXISTS `{$wpdb->prefix}cc_qa_subscriptions`" );
 
 // Clear scheduled cron events
-wp_clear_scheduled_hook( 'cc_qa_weekly_digest' );
+wp_clear_scheduled_hook( 'wanswers_weekly_digest' );
 
 // Flush rewrite rules
 flush_rewrite_rules();

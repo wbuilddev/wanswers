@@ -9,14 +9,14 @@
  * They are awarded exactly once — the check_and_award() method is a no-op
  * if the user already holds the badge.
  *
- * Meta key: _cc_qa_badges  →  [ 'first_question', 'helpful', … ]
+ * Meta key: _wanswers_badges  →  [ 'first_question', 'helpful', … ]
  */
 
 if ( ! defined( 'ABSPATH' ) ) exit;
 
-if ( class_exists( 'CC_QA_Badges' ) ) return;
+if ( class_exists( 'Wanswers_Badges' ) ) return;
 
-class CC_QA_Badges {
+class Wanswers_Badges {
 
     /* ── Badge Definitions ──────────────────────────────────────────
      *
@@ -114,13 +114,13 @@ class CC_QA_Badges {
         if ( in_array( $slug, $badges, true ) ) return false;
 
         $badges[] = $slug;
-        update_user_meta( $user_id, '_cc_qa_badges', wp_json_encode( $badges ) );
+        update_user_meta( $user_id, '_wanswers_badges', wp_json_encode( $badges ) );
         return true;
     }
 
     /* ── Get All Badges for a User ──────────────────────────────── */
     public static function get( $user_id ) {
-        $raw = get_user_meta( (int) $user_id, '_cc_qa_badges', true );
+        $raw = get_user_meta( (int) $user_id, '_wanswers_badges', true );
         if ( ! $raw ) return array();
         $decoded = json_decode( $raw, true );
         return is_array( $decoded ) ? $decoded : array();
@@ -164,7 +164,7 @@ class CC_QA_Badges {
 
         // ── Volume badges ────────────────────────────────────────
         if ( in_array( 'question', $triggers, true ) && ! in_array( 'prolific', $badges, true ) ) {
-            $q_count = (int) count_user_posts( $user_id, 'cc_question' );
+            $q_count = (int) count_user_posts( $user_id, 'wanswers_question' );
             if ( $q_count >= 25 ) self::award( $user_id, 'prolific' );
         }
 
@@ -175,7 +175,7 @@ class CC_QA_Badges {
 
         // ── Reputation badges ────────────────────────────────────
         if ( in_array( 'vote', $triggers, true ) ) {
-            $lifetime_up = (int) get_user_meta( $user_id, '_cc_qa_lifetime_upvotes', true );
+            $lifetime_up = (int) get_user_meta( $user_id, '_wanswers_lifetime_upvotes', true );
             if ( ! in_array( 'well_received', $badges, true ) && $lifetime_up >= 50 ) {
                 self::award( $user_id, 'well_received' );
             }
@@ -198,7 +198,7 @@ class CC_QA_Badges {
                 $registered = strtotime( $user->user_registered );
                 if ( ( time() - $registered ) >= YEAR_IN_SECONDS ) {
                     // Must have at least 1 post to qualify (can't just be registered)
-                    $total = (int) count_user_posts( $user_id, 'cc_question' )
+                    $total = (int) count_user_posts( $user_id, 'wanswers_question' )
                            + self::count_answers( $user_id );
                     if ( $total >= 1 ) {
                         self::award( $user_id, 'veteran' );
@@ -212,7 +212,7 @@ class CC_QA_Badges {
 
     private static function count_answers( $user_id ) {
         $q = new WP_Query( array(
-            'post_type'      => 'cc_answer',
+            'post_type'      => 'wanswers_answer',
             'author'         => $user_id,
             'post_status'    => 'publish',
             'posts_per_page' => 1,
@@ -226,15 +226,15 @@ class CC_QA_Badges {
         // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
         return (int) $wpdb->get_var( $wpdb->prepare(
             "SELECT COUNT(*) FROM {$wpdb->posts} p
-             INNER JOIN {$wpdb->postmeta} pm ON pm.post_id = p.ID AND pm.meta_key = '_cc_qa_accepted' AND pm.meta_value = '1'
-             WHERE p.post_type = 'cc_answer' AND p.post_status = 'publish' AND p.post_author = %d",
+             INNER JOIN {$wpdb->postmeta} pm ON pm.post_id = p.ID AND pm.meta_key = '_wanswers_accepted' AND pm.meta_value = '1'
+             WHERE p.post_type = 'wanswers_answer' AND p.post_status = 'publish' AND p.post_author = %d",
             $user_id
         ) );
     }
 
     private static function count_recent_answers( $user_id, $days = 30 ) {
         $q = new WP_Query( array(
-            'post_type'      => 'cc_answer',
+            'post_type'      => 'wanswers_answer',
             'author'         => $user_id,
             'post_status'    => 'publish',
             'posts_per_page' => 1,
@@ -297,7 +297,7 @@ class CC_QA_Badges {
         $q_rows = $wpdb->get_results( $wpdb->prepare(
             "SELECT DATE_FORMAT(post_date, '%%Y-%%m') AS ym, COUNT(*) AS cnt
              FROM {$wpdb->posts}
-             WHERE post_type = 'cc_question'
+             WHERE post_type = 'wanswers_question'
                AND post_status = 'publish'
                AND post_author = %d
                AND post_date >= %s
@@ -316,7 +316,7 @@ class CC_QA_Badges {
         $a_rows = $wpdb->get_results( $wpdb->prepare(
             "SELECT DATE_FORMAT(post_date, '%%Y-%%m') AS ym, COUNT(*) AS cnt
              FROM {$wpdb->posts}
-             WHERE post_type = 'cc_answer'
+             WHERE post_type = 'wanswers_answer'
                AND post_status = 'publish'
                AND post_author = %d
                AND post_date >= %s

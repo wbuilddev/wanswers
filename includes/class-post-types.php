@@ -1,9 +1,9 @@
 <?php
 if ( ! defined( 'ABSPATH' ) ) exit;
 
-if ( class_exists( 'CC_QA_Post_Types' ) ) return;
+if ( class_exists( 'Wanswers_Post_Types' ) ) return;
 
-class CC_QA_Post_Types {
+class Wanswers_Post_Types {
 
     public static function init() {
         add_action( 'init',                  array( __CLASS__, 'register' ) );
@@ -14,7 +14,7 @@ class CC_QA_Post_Types {
         add_filter( 'template_include',      array( __CLASS__, 'load_templates' ) );
 
         // Homepage mode: serve Q&A feed at / and redirect /questions/ archive to /
-        if ( CC_QA_Admin::get( 'cc_qa_homepage_mode' ) ) {
+        if ( Wanswers_Admin::get( 'wanswers_homepage_mode' ) ) {
             add_action( 'template_redirect', array( __CLASS__, 'homepage_redirect_archive' ), 1 );
         }
     }
@@ -25,7 +25,7 @@ class CC_QA_Post_Types {
      * Individual question pages (/questions/slug/) and topic pages are unaffected.
      */
     public static function homepage_redirect_archive() {
-        if ( is_post_type_archive( 'cc_question' ) ) {
+        if ( is_post_type_archive( 'wanswers_question' ) ) {
             wp_safe_redirect( home_url( '/' ), 301 );
             exit;
         }
@@ -33,19 +33,19 @@ class CC_QA_Post_Types {
 
     /**
      * Register /questions/author/{username}/ as a routed URL.
-     * Rewrites to index.php?cc_qa_author_name={username}.
+     * Rewrites to index.php?wanswers_author_name={username}.
      * Flush rewrite rules on plugin activation — not here.
      */
     public static function add_rewrite_rules() {
         add_rewrite_rule(
             '^questions/author/([^/]+)/?$',
-            'index.php?cc_qa_author_name=$matches[1]',
+            'index.php?wanswers_author_name=$matches[1]',
             'top'
         );
     }
 
     public static function add_query_vars( $vars ) {
-        $vars[] = 'cc_qa_author_name';
+        $vars[] = 'wanswers_author_name';
         return $vars;
     }
 
@@ -55,38 +55,38 @@ class CC_QA_Post_Types {
      */
     public static function load_templates( $template ) {
         // Homepage mode: serve the Q&A archive template at the front page
-        if ( CC_QA_Admin::get( 'cc_qa_homepage_mode' ) && is_front_page() && is_home() ) {
-            $theme_tpl = locate_template( array( 'archive-cc_question.php' ) );
+        if ( Wanswers_Admin::get( 'wanswers_homepage_mode' ) && is_front_page() && is_home() ) {
+            $theme_tpl = locate_template( array( 'archive-wanswers_question.php' ) );
             if ( $theme_tpl ) return $theme_tpl;
-            return CC_QA_PATH . 'templates/archive-cc_question.php';
+            return WANSWERS_PATH . 'templates/archive-wanswers_question.php';
         }
-        if ( is_singular( 'cc_question' ) ) {
-            $theme_tpl = locate_template( array( 'single-cc_question.php' ) );
+        if ( is_singular( 'wanswers_question' ) ) {
+            $theme_tpl = locate_template( array( 'single-wanswers_question.php' ) );
             if ( $theme_tpl ) return $theme_tpl;
-            return CC_QA_PATH . 'templates/single-cc_question.php';
+            return WANSWERS_PATH . 'templates/single-wanswers_question.php';
         }
-        if ( is_post_type_archive( 'cc_question' ) ) {
-            $theme_tpl = locate_template( array( 'archive-cc_question.php' ) );
+        if ( is_post_type_archive( 'wanswers_question' ) ) {
+            $theme_tpl = locate_template( array( 'archive-wanswers_question.php' ) );
             if ( $theme_tpl ) return $theme_tpl;
-            return CC_QA_PATH . 'templates/archive-cc_question.php';
+            return WANSWERS_PATH . 'templates/archive-wanswers_question.php';
         }
-        if ( is_tax( 'cc_question_topic' ) ) {
-            $theme_tpl = locate_template( array( 'taxonomy-cc_question_topic.php' ) );
+        if ( is_tax( 'wanswers_question_topic' ) ) {
+            $theme_tpl = locate_template( array( 'taxonomy-wanswers_question_topic.php' ) );
             if ( $theme_tpl ) return $theme_tpl;
-            return CC_QA_PATH . 'templates/archive-cc_question.php';
+            return WANSWERS_PATH . 'templates/archive-wanswers_question.php';
         }
         // Q&A member profile at /questions/author/{username}/
-        $author_name = get_query_var( 'cc_qa_author_name', '' );
+        $author_name = get_query_var( 'wanswers_author_name', '' );
         if ( $author_name !== '' ) {
-            $theme_tpl = locate_template( array( 'author-cc_question.php' ) );
+            $theme_tpl = locate_template( array( 'author-wanswers_question.php' ) );
             if ( $theme_tpl ) return $theme_tpl;
-            return CC_QA_PATH . 'templates/author-cc_question.php';
+            return WANSWERS_PATH . 'templates/author-wanswers_question.php';
         }
         return $template;
     }
 
     public static function register() {
-        register_post_type( 'cc_question', array(
+        register_post_type( 'wanswers_question', array(
             'labels' => array(
                 'name'               => 'wAnswers',
                 'singular_name'      => 'Question',
@@ -110,7 +110,7 @@ class CC_QA_Post_Types {
             'hierarchical'    => false,
         ) );
 
-        register_post_type( 'cc_answer', array(
+        register_post_type( 'wanswers_answer', array(
             'labels' => array(
                 'name'               => 'Answers',
                 'singular_name'      => 'Answer',
@@ -125,7 +125,7 @@ class CC_QA_Post_Types {
             'public'             => false,
             'publicly_queryable' => false,
             'show_ui'            => true,
-            'show_in_menu'       => 'edit.php?post_type=cc_question',
+            'show_in_menu'       => 'edit.php?post_type=wanswers_question',
             'supports'           => array( 'editor', 'author', 'custom-fields' ),
             'show_in_rest'       => false,
             'capability_type'    => 'post',
@@ -134,7 +134,7 @@ class CC_QA_Post_Types {
     }
 
     public static function register_taxonomies() {
-        register_taxonomy( 'cc_question_topic', 'cc_question', array(
+        register_taxonomy( 'wanswers_question_topic', 'wanswers_question', array(
             'labels' => array(
                 'name'          => 'Topics',
                 'singular_name' => 'Topic',
@@ -152,8 +152,8 @@ class CC_QA_Post_Types {
     }
 
     public static function messages( $messages ) {
-        $messages['cc_question'] = array_fill( 0, 11, 'Question saved.' );
-        $messages['cc_answer']   = array_fill( 0, 11, 'Answer saved.' );
+        $messages['wanswers_question'] = array_fill( 0, 11, 'Question saved.' );
+        $messages['wanswers_answer']   = array_fill( 0, 11, 'Answer saved.' );
         return $messages;
     }
 }

@@ -1,12 +1,12 @@
 <?php
 if ( ! defined( 'ABSPATH' ) ) exit;
 
-if ( class_exists( 'CC_QA_Shortcode' ) ) return;
+if ( class_exists( 'Wanswers_Shortcode' ) ) return;
 
-class CC_QA_Shortcode {
+class Wanswers_Shortcode {
 
     public static function init() {
-        add_shortcode( 'cc_qa', array( __CLASS__, 'render' ) );
+        add_shortcode( 'wanswers_qa', array( __CLASS__, 'render' ) );
     }
 
     /* ── Shortcode entry point ── */
@@ -17,24 +17,24 @@ class CC_QA_Shortcode {
     /* ── Build WP_Query args (reused by Ajax load-more) ── */
     public static function build_question_query( $page = 1, $topic = '', $sort = 'newest', $search = '' ) {
         $args = array(
-            'post_type'      => 'cc_question',
+            'post_type'      => 'wanswers_question',
             'post_status'    => 'publish',
-            'posts_per_page' => (int) CC_QA_Admin::get( 'cc_qa_questions_per_page' ),
+            'posts_per_page' => (int) Wanswers_Admin::get( 'wanswers_questions_per_page' ),
             'paged'          => $page,
         );
 
         if ( $sort === 'votes' ) {
-            $args['meta_key'] = '_cc_qa_votes';
+            $args['meta_key'] = '_wanswers_votes';
             $args['orderby']  = 'meta_value_num';
             $args['order']    = 'DESC';
         } elseif ( $sort === 'answers' ) {
-            $args['meta_key'] = '_cc_qa_answer_count';
+            $args['meta_key'] = '_wanswers_answer_count';
             $args['orderby']  = 'meta_value_num';
             $args['order']    = 'DESC';
         } elseif ( $sort === 'unanswered' ) {
             $args['meta_query'] = array(
                 array(
-                    'key'     => '_cc_qa_answer_count',
+                    'key'     => '_wanswers_answer_count',
                     'value'   => '0',
                     'compare' => '=',
                 ),
@@ -49,7 +49,7 @@ class CC_QA_Shortcode {
         if ( $topic ) {
             $args['tax_query'] = array(
                 array(
-                    'taxonomy' => 'cc_question_topic',
+                    'taxonomy' => 'wanswers_question_topic',
                     'field'    => 'slug',
                     'terms'    => $topic,
                 ),
@@ -65,40 +65,40 @@ class CC_QA_Shortcode {
 
     /* ── Question List / Browse View ─────────────────────────────
      * Public so the archive template can call it directly.
-     * Also used by the [cc_qa] shortcode.
+     * Also used by the [wanswers_qa] shortcode.
      * ────────────────────────────────────────────────────────── */
     public static function render_list_view() {
         $user_id  = get_current_user_id();
-        $topics   = get_terms( array( 'taxonomy' => 'cc_question_topic', 'hide_empty' => false ) );
-        $q_count  = wp_count_posts( 'cc_question' )->publish ?? 0;
-        $a_count  = wp_count_posts( 'cc_answer' )->publish ?? 0;
+        $topics   = get_terms( array( 'taxonomy' => 'wanswers_question_topic', 'hide_empty' => false ) );
+        $q_count  = wp_count_posts( 'wanswers_question' )->publish ?? 0;
+        $a_count  = wp_count_posts( 'wanswers_answer' )->publish ?? 0;
         $query    = new WP_Query( self::build_question_query() );
 
         // Count unanswered questions for the hero stat
         $unanswered_count = (int) ( new WP_Query( array(
-            'post_type'      => 'cc_question',
+            'post_type'      => 'wanswers_question',
             'post_status'    => 'publish',
             'posts_per_page' => 1,
             'fields'         => 'ids',
             'meta_query'     => array( array(
-                'key'     => '_cc_qa_answer_count',
+                'key'     => '_wanswers_answer_count',
                 'value'   => '0',
                 'compare' => '=',
             ) ),
         ) ) )->found_posts;
 
         // Admin-controlled heading / subtitle
-        $heading  = CC_QA_Admin::get( 'cc_qa_archive_title' )    ?: 'Community Q&A';
-        $subtitle = CC_QA_Admin::get( 'cc_qa_archive_subtitle' ) ?: 'Ask questions and get answers from the community.';
+        $heading  = Wanswers_Admin::get( 'wanswers_archive_title' )    ?: 'Community Q&A';
+        $subtitle = Wanswers_Admin::get( 'wanswers_archive_subtitle' ) ?: 'Ask questions and get answers from the community.';
 
         // Leaderboard position setting
-        $lb_position = CC_QA_Admin::get( 'cc_qa_leaderboard_position' );
+        $lb_position = Wanswers_Admin::get( 'wanswers_leaderboard_position' );
         $show_lb     = ( 'none' !== $lb_position );
 
         ob_start();
         ?>
         <?php if ( $show_lb && in_array( $lb_position, array( 'sidebar-right', 'sidebar-left' ), true ) ) :
-              $sticky_class = CC_QA_Admin::get( 'cc_qa_sidebar_sticky' ) ? '' : ' cc-qa-sidebar-no-sticky';
+              $sticky_class = Wanswers_Admin::get( 'wanswers_sidebar_sticky' ) ? '' : ' cc-qa-sidebar-no-sticky';
         ?>
         <div class="cc-qa-layout-wrap cc-qa-layout-<?php echo esc_attr( $lb_position . $sticky_class ); ?>">
           <div class="cc-qa-layout-main">
@@ -106,7 +106,7 @@ class CC_QA_Shortcode {
 
         <?php if ( $show_lb && 'above' === $lb_position ) : ?>
           <div class="cc-qa-lb-stacked cc-qa-lb-above">
-            <?php echo CC_QA_Leaderboard::render_inline( 0, 'stacked' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+            <?php echo wp_kses_post( Wanswers_Leaderboard::render_inline( 0, 'stacked' ) ); ?>
           </div>
         <?php endif; ?>
 
@@ -120,11 +120,11 @@ class CC_QA_Shortcode {
             </div>
             <div class="qa-header-stats">
               <a href="#qa-question-feed" class="qa-stat qa-stat-link">
-                <span class="qa-stat-num"><?php echo number_format( $q_count ); ?></span>
+                <span class="qa-stat-num"><?php echo esc_html( number_format( $q_count ) ); ?></span>
                 <span class="qa-stat-label">Total Questions</span>
               </a>
               <a href="#qa-question-feed" class="qa-stat qa-stat-link qa-stat-unanswered" data-filter-unanswered="1">
-                <span class="qa-stat-num"><?php echo number_format( $unanswered_count ); ?></span>
+                <span class="qa-stat-num"><?php echo esc_html( number_format( $unanswered_count ) ); ?></span>
                 <span class="qa-stat-label">Unanswered</span>
               </a>
             </div>
@@ -174,7 +174,7 @@ class CC_QA_Shortcode {
               <div class="qa-login-nudge">
                 <span class="qa-login-nudge-text">Join the community to ask questions and share answers.</span>
                 <a href="<?php echo esc_url( wp_registration_url() ); ?>" class="btn-qa-primary">Join Free</a>
-                <a href="<?php echo esc_url( wp_login_url( get_post_type_archive_link( 'cc_question' ) ) ); ?>" class="btn-qa-ghost">Log In</a>
+                <a href="<?php echo esc_url( wp_login_url( get_post_type_archive_link( 'wanswers_question' ) ) ); ?>" class="btn-qa-ghost">Log In</a>
               </div>
             <?php endif; ?>
           </div>
@@ -198,7 +198,7 @@ class CC_QA_Shortcode {
             <?php foreach ( $topics as $topic ) : ?>
               <button class="qa-topic-filter" data-topic="<?php echo esc_attr( $topic->slug ); ?>">
                 <?php echo esc_html( $topic->name ); ?>
-                <span class="qa-topic-count"><?php echo (int) $topic->count; ?></span>
+                <span class="qa-topic-count"><?php echo esc_html( (int) $topic->count ); ?></span>
               </button>
             <?php endforeach; ?>
           </div>
@@ -214,14 +214,14 @@ class CC_QA_Shortcode {
                 }
                 wp_reset_postdata();
             } else {
-                echo '<div class="qa-empty"><span class="qa-empty-icon">&#128172;</span><p>' . esc_html__( 'No questions yet. Be the first to ask!', 'wanswers' ) . '</p></div>';
+                echo '<div class="qa-empty"><span class="qa-empty-icon">&#128172;</span><p>' . esc_html__( 'No questions yet. Be the first to ask!', 'wanswers-seo-first-qa' ) . '</p></div>';
             }
             ?>
           </div>
 
           <?php if ( $query->max_num_pages > 1 ) : ?>
           <div class="qa-load-more-wrap" id="qa-load-more-wrap">
-            <button class="btn-qa-load-more" id="qa-load-more" data-page="1" data-max="<?php echo (int) $query->max_num_pages; ?>">
+            <button class="btn-qa-load-more" id="qa-load-more" data-page="1" data-max="<?php echo esc_html( (int) $query->max_num_pages ); ?>">
               Load more questions
             </button>
           </div>
@@ -229,7 +229,7 @@ class CC_QA_Shortcode {
 
           <div class="qa-toast" id="qa-toast" role="status" aria-live="polite" hidden></div>
 
-          <?php if ( CC_QA_Admin::get( 'cc_qa_footer_credit' ) ) : ?>
+          <?php if ( Wanswers_Admin::get( 'wanswers_footer_credit' ) ) : ?>
           <p class="qa-powered-by">
             Powered by <a href="https://wbuild.dev/wanswers/" target="_blank" rel="noopener noreferrer"><span style="color:#ff5020;font-weight:700;">w</span>Answers</a>
           </p>
@@ -239,14 +239,14 @@ class CC_QA_Shortcode {
 
         <?php if ( $show_lb && 'below' === $lb_position ) : ?>
           <div class="cc-qa-lb-stacked cc-qa-lb-below">
-            <?php echo CC_QA_Leaderboard::render_inline( 0, 'stacked' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+            <?php echo wp_kses_post( Wanswers_Leaderboard::render_inline( 0, 'stacked' ) ); ?>
           </div>
         <?php endif; ?>
 
         <?php if ( $show_lb && in_array( $lb_position, array( 'sidebar-right', 'sidebar-left' ), true ) ) : ?>
           </div><!-- /.cc-qa-layout-main -->
           <aside class="cc-qa-layout-sidebar">
-            <?php echo CC_QA_Leaderboard::render_inline( 0, 'compact' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+            <?php echo wp_kses_post( Wanswers_Leaderboard::render_inline( 0, 'compact' ) ); ?>
           </aside>
         </div><!-- /.cc-qa-layout-wrap -->
         <?php endif; ?>
@@ -258,16 +258,16 @@ class CC_QA_Shortcode {
     public static function render_question_card( $post ) {
         $user_id    = get_current_user_id();
         $author     = self::get_author_display( $post->post_author );
-        $votes      = (int) get_post_meta( $post->ID, '_cc_qa_votes', true );
-        $a_count    = (int) get_post_meta( $post->ID, '_cc_qa_answer_count', true );
-        $accepted   = (bool) get_post_meta( $post->ID, '_cc_qa_accepted', true );
-        $user_voted = $user_id ? CC_QA_Database::user_voted( $post->ID, $user_id ) : false;
+        $votes      = (int) get_post_meta( $post->ID, '_wanswers_votes', true );
+        $a_count    = (int) get_post_meta( $post->ID, '_wanswers_answer_count', true );
+        $accepted   = (bool) get_post_meta( $post->ID, '_wanswers_accepted', true );
+        $user_voted = $user_id ? Wanswers_Database::user_voted( $post->ID, $user_id ) : false;
         $is_author  = $user_id && (int) $post->post_author === $user_id;
-        $topics     = wp_get_object_terms( $post->ID, 'cc_question_topic' );
+        $topics     = wp_get_object_terms( $post->ID, 'wanswers_question_topic' );
         $q_url      = get_permalink( $post->ID );
         $perms      = self::get_edit_permissions( $post );
         ?>
-        <div class="qa-question-card <?php echo $accepted ? 'qa-card-answered' : ''; ?>"
+        <div class="qa-question-card <?php echo esc_attr( $accepted ? 'qa-card-answered' : '' ); ?>"
              id="question-<?php echo esc_attr( $post->ID ); ?>"
              itemscope itemtype="https://schema.org/Question">
           <meta itemprop="name"        content="<?php echo esc_attr( $post->post_title ); ?>">
@@ -276,22 +276,22 @@ class CC_QA_Shortcode {
           <meta itemprop="url"         content="<?php echo esc_attr( $q_url ); ?>">
 
           <div class="qa-card-votes">
-            <button class="qa-vote-btn qa-vote-up <?php echo $user_voted ? 'voted' : ''; ?>"
+            <button class="qa-vote-btn qa-vote-up <?php echo esc_attr( $user_voted ? 'voted' : '' ); ?>"
                     data-post-id="<?php echo esc_attr( $post->ID ); ?>"
                     data-vote="1"
                     aria-label="Upvote"
-                    <?php echo ( ! $user_id || $is_author ) ? 'disabled' : ''; ?>>▲</button>
+                    <?php echo esc_attr( ( ! $user_id || $is_author ) ? 'disabled' : '' ); ?>>▲</button>
             <span class="qa-vote-count" id="votes-<?php echo esc_attr( $post->ID ); ?>"><?php echo esc_html( $votes ); ?></span>
             <button class="qa-vote-btn qa-vote-down"
                     data-post-id="<?php echo esc_attr( $post->ID ); ?>"
                     data-vote="-1"
                     aria-label="Downvote"
-                    <?php echo ( ! $user_id || $is_author ) ? 'disabled' : ''; ?>>▼</button>
+                    <?php echo esc_attr( ( ! $user_id || $is_author ) ? 'disabled' : '' ); ?>>▼</button>
           </div>
 
-          <div class="qa-card-answer-count <?php echo $accepted ? 'answered' : ( $a_count > 0 ? 'has-answers' : '' ); ?>">
+          <div class="qa-card-answer-count <?php echo esc_attr( $accepted ? 'answered' : ( $a_count > 0 ? 'has-answers' : '' ) ); ?>">
             <span class="qa-answer-num" id="answer-count-<?php echo esc_attr( $post->ID ); ?>"><?php echo esc_html( $a_count ); ?></span>
-            <span class="qa-answer-label"><?php echo $a_count === 1 ? 'answer' : 'answers'; ?></span>
+            <span class="qa-answer-label"><?php echo esc_html( $a_count === 1 ? 'answer' : 'answers' ); ?></span>
             <?php if ( $accepted ) : ?><span class="qa-accepted-check">✓</span><?php endif; ?>
           </div>
 
@@ -319,7 +319,7 @@ class CC_QA_Shortcode {
             <div class="qa-inline-edit" id="edit-question-<?php echo esc_attr( $post->ID ); ?>" hidden>
               <input type="text" class="qa-input qa-edit-title"
                      value="<?php echo esc_attr( $post->post_title ); ?>"
-                     maxlength="<?php echo esc_attr( CC_QA_Admin::get( 'cc_qa_question_title_max' ) ); ?>"
+                     maxlength="<?php echo esc_attr( Wanswers_Admin::get( 'wanswers_question_title_max' ) ); ?>"
                      data-post-id="<?php echo esc_attr( $post->ID ); ?>"
                      data-type="question" />
               <textarea class="qa-textarea qa-edit-body" rows="3"
@@ -379,11 +379,11 @@ class CC_QA_Shortcode {
      * ────────────────────────────────────────────────────────── */
     public static function render_answer_card( $post, $current_user_id = 0, $is_question_author = false, $accepted_id = 0 ) {
         $author     = self::get_author_display( $post->post_author );
-        $votes      = (int) get_post_meta( $post->ID, '_cc_qa_votes', true );
-        $accepted   = (bool) get_post_meta( $post->ID, '_cc_qa_accepted', true );
-        $user_voted = $current_user_id ? CC_QA_Database::user_voted( $post->ID, $current_user_id ) : false;
+        $votes      = (int) get_post_meta( $post->ID, '_wanswers_votes', true );
+        $accepted   = (bool) get_post_meta( $post->ID, '_wanswers_accepted', true );
+        $user_voted = $current_user_id ? Wanswers_Database::user_voted( $post->ID, $current_user_id ) : false;
         $is_author  = $current_user_id && (int) $post->post_author === $current_user_id;
-        $replies    = get_post_meta( $post->ID, '_cc_qa_replies', true ) ?: array();
+        $replies    = get_post_meta( $post->ID, '_wanswers_replies', true ) ?: array();
         $perms      = self::get_edit_permissions( $post );
 
         $can_accept = $is_question_author
@@ -391,7 +391,7 @@ class CC_QA_Shortcode {
                       && ! $is_author
                       && $current_user_id;
         ?>
-        <div class="qa-answer-card <?php echo $accepted ? 'qa-answer-accepted' : ''; ?>"
+        <div class="qa-answer-card <?php echo esc_attr( $accepted ? 'qa-answer-accepted' : '' ); ?>"
              id="answer-<?php echo esc_attr( $post->ID ); ?>"
              itemscope itemtype="https://schema.org/Answer">
           <meta itemprop="dateCreated" content="<?php echo esc_attr( get_the_date( 'c', $post ) ); ?>">
@@ -403,17 +403,17 @@ class CC_QA_Shortcode {
 
           <div class="qa-answer-layout">
             <div class="qa-vote-col">
-              <button class="qa-vote-btn qa-vote-up <?php echo $user_voted ? 'voted' : ''; ?>"
+              <button class="qa-vote-btn qa-vote-up <?php echo esc_attr( $user_voted ? 'voted' : '' ); ?>"
                       data-post-id="<?php echo esc_attr( $post->ID ); ?>"
                       data-vote="1"
                       aria-label="Upvote answer"
-                      <?php echo ( ! $current_user_id || $is_author ) ? 'disabled' : ''; ?>>▲</button>
+                      <?php echo esc_attr( ( ! $current_user_id || $is_author ) ? 'disabled' : '' ); ?>>▲</button>
               <span class="qa-vote-count" id="votes-<?php echo esc_attr( $post->ID ); ?>"><?php echo esc_html( $votes ); ?></span>
               <button class="qa-vote-btn qa-vote-down"
                       data-post-id="<?php echo esc_attr( $post->ID ); ?>"
                       data-vote="-1"
                       aria-label="Downvote answer"
-                      <?php echo ( ! $current_user_id || $is_author ) ? 'disabled' : ''; ?>>▼</button>
+                      <?php echo esc_attr( ( ! $current_user_id || $is_author ) ? 'disabled' : '' ); ?>>▼</button>
             </div>
 
             <div class="qa-answer-content" itemprop="text">
@@ -465,7 +465,7 @@ class CC_QA_Shortcode {
                   <?php endif; ?>
                   <?php if ( is_user_logged_in() ) : ?>
                     <button class="qa-reply-toggle" data-answer-id="<?php echo esc_attr( $post->ID ); ?>">
-                      Reply <?php if ( ! empty( $replies ) ) : ?><span class="qa-reply-count"><?php echo count( $replies ); ?></span><?php endif; ?>
+                      Reply <?php if ( ! empty( $replies ) ) : ?><span class="qa-reply-count"><?php echo esc_html( count( $replies ) ); ?></span><?php endif; ?>
                     </button>
                   <?php endif; ?>
                   <?php if ( $perms['can_edit'] ) : ?>
@@ -539,7 +539,7 @@ class CC_QA_Shortcode {
         }
 
         // Profile URL for the reply author
-        $reply_profile_url = ! empty( $reply['user_id'] ) ? CC_QA_Badges::profile_url( (int) $reply['user_id'] ) : '';
+        $reply_profile_url = ! empty( $reply['user_id'] ) ? Wanswers_Badges::profile_url( (int) $reply['user_id'] ) : '';
         ?>
         <div class="qa-reply" id="reply-<?php echo esc_attr( $reply_id ); ?>"
              data-answer-id="<?php echo esc_attr( $answer_id ); ?>">
@@ -607,7 +607,7 @@ class CC_QA_Shortcode {
         return (object) array(
             'name'        => $name,
             'initial'     => strtoupper( mb_substr( $name, 0, 1 ) ) ?: 'M',
-            'profile_url' => $user_id ? CC_QA_Badges::profile_url( $user_id ) : '',
+            'profile_url' => $user_id ? Wanswers_Badges::profile_url( $user_id ) : '',
         );
     }
 

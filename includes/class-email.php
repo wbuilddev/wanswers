@@ -1,15 +1,15 @@
 <?php
 if ( ! defined( 'ABSPATH' ) ) exit;
 
-if ( class_exists( 'CC_QA_Email' ) ) return;
+if ( class_exists( 'Wanswers_Email' ) ) return;
 
-class CC_QA_Email {
+class Wanswers_Email {
 
     /**
      * Notify all registered users when a new question is posted.
      */
     public static function notify_new_question( $question_id ) {
-        if ( ! CC_QA_Admin::get( 'cc_qa_notify_new_questions' ) ) return;
+        if ( ! Wanswers_Admin::get( 'wanswers_notify_new_questions' ) ) return;
 
         $question    = get_post( $question_id );
         $author_data = get_userdata( $question->post_author );
@@ -23,7 +23,7 @@ class CC_QA_Email {
 
         $users = get_users( array(
             'fields' => array( 'ID', 'user_email', 'display_name' ),
-            'number' => (int) CC_QA_Admin::get( 'cc_qa_email_max_recipients' ),
+            'number' => (int) Wanswers_Admin::get( 'wanswers_email_max_recipients' ),
         ) );
 
         foreach ( $users as $u ) {
@@ -31,7 +31,7 @@ class CC_QA_Email {
 
             // Subscribe the user to this question (creates a token row) so they can
             // unsubscribe — token is returned and used for a safe, ID-free unsub link.
-            $token       = CC_QA_Database::subscribe( $question_id, (int) $u->ID, $u->user_email );
+            $token       = Wanswers_Database::subscribe( $question_id, (int) $u->ID, $u->user_email );
             $unsub_url   = self::get_unsubscribe_url( $question_id, $token );
 
             $body = self::template(
@@ -52,7 +52,7 @@ class CC_QA_Email {
      * Notify question subscribers when a new answer is posted.
      */
     public static function notify_new_answer( $question_id, $answer_id ) {
-        if ( ! CC_QA_Admin::get( 'cc_qa_notify_new_answers' ) ) return;
+        if ( ! Wanswers_Admin::get( 'wanswers_notify_new_answers' ) ) return;
 
         $question           = get_post( $question_id );
         $answer             = get_post( $answer_id );
@@ -65,7 +65,7 @@ class CC_QA_Email {
         $site_name = get_bloginfo( 'name' );
         $subject   = "[{$site_name}] New answer to: " . esc_html( $question->post_title );
 
-        $subscribers = CC_QA_Database::get_subscribers( $question_id );
+        $subscribers = Wanswers_Database::get_subscribers( $question_id );
 
         foreach ( $subscribers as $sub ) {
             if ( (int) $sub->user_id === (int) $answer->post_author ) continue;
@@ -88,7 +88,7 @@ class CC_QA_Email {
      * Notify question subscribers when a reply is posted on an answer.
      */
     public static function notify_new_reply( $question_id, $answer_id, $content, $user ) {
-        if ( ! CC_QA_Admin::get( 'cc_qa_notify_new_answers' ) ) return;
+        if ( ! Wanswers_Admin::get( 'wanswers_notify_new_answers' ) ) return;
 
         $question  = get_post( $question_id );
         $q_url     = self::question_url( $question_id ) . '#answer-' . $answer_id;
@@ -96,7 +96,7 @@ class CC_QA_Email {
         $name      = ! empty( trim( $user->display_name ) ) ? $user->display_name : $user->user_login;
         $subject   = "[{$site_name}] New reply on: " . esc_html( $question->post_title );
 
-        $subscribers = CC_QA_Database::get_subscribers( $question_id );
+        $subscribers = Wanswers_Database::get_subscribers( $question_id );
 
         foreach ( $subscribers as $sub ) {
             if ( (int) $sub->user_id === (int) $user->ID ) continue;
@@ -199,7 +199,7 @@ class CC_QA_Email {
     public static function get_unsubscribe_url( $question_id = 0, $token = '' ) {
         if ( ! $token ) return '';
         return add_query_arg( array(
-            'action'   => 'cc_qa_unsubscribe',
+            'action'   => 'wanswers_unsubscribe',
             'token'    => urlencode( $token ),
             'scope'    => $question_id ? 'question' : 'all',
         ), admin_url( 'admin-ajax.php' ) );
@@ -216,26 +216,26 @@ class CC_QA_Email {
         $scope = sanitize_key( $_GET['scope'] ?? 'question' );
 
         if ( ! $token ) {
-            wp_die( esc_html__( 'Invalid unsubscribe link.', 'wanswers' ), esc_html__( 'Unsubscribe Error', 'wanswers' ), array( 'response' => 400 ) );
+            wp_die( esc_html__( 'Invalid unsubscribe link.', 'wanswers-seo-first-qa' ), esc_html__( 'Unsubscribe Error', 'wanswers-seo-first-qa' ), array( 'response' => 400 ) );
         }
 
-        $sub = CC_QA_Database::get_sub_by_token( $token );
+        $sub = Wanswers_Database::get_sub_by_token( $token );
         if ( ! $sub ) {
-            wp_die( esc_html__( 'This unsubscribe link has already been used or is invalid.', 'wanswers' ), esc_html__( 'Already Unsubscribed', 'wanswers' ), array( 'response' => 200 ) );
+            wp_die( esc_html__( 'This unsubscribe link has already been used or is invalid.', 'wanswers-seo-first-qa' ), esc_html__( 'Already Unsubscribed', 'wanswers-seo-first-qa' ), array( 'response' => 200 ) );
         }
 
         if ( 'all' === $scope ) {
-            CC_QA_Database::unsubscribe_all_for_user( (int) $sub->user_id );
-            wp_die( wp_kses_post( __( '&#9989; You have been unsubscribed from all Q&amp;A email notifications. You can re-subscribe by participating in a question or answer.', 'wanswers' ) ), esc_html__( 'Unsubscribed', 'wanswers' ), array( 'response' => 200 ) );
+            Wanswers_Database::unsubscribe_all_for_user( (int) $sub->user_id );
+            wp_die( wp_kses_post( __( '&#9989; You have been unsubscribed from all Q&amp;A email notifications. You can re-subscribe by participating in a question or answer.', 'wanswers-seo-first-qa' ) ), esc_html__( 'Unsubscribed', 'wanswers-seo-first-qa' ), array( 'response' => 200 ) );
         } else {
-            CC_QA_Database::unsubscribe_by_token( $token );
+            Wanswers_Database::unsubscribe_by_token( $token );
             $q_title = get_the_title( (int) $sub->question_id );
             /* translators: %s: question title */
             $msg = $q_title
                 /* translators: %s: question title */
-                ? sprintf( __( '&#9989; You have been unsubscribed from notifications for: <strong>%s</strong>.', 'wanswers' ), esc_html( $q_title ) )
-                : __( '&#9989; You have been unsubscribed.', 'wanswers' );
-            wp_die( wp_kses_post( $msg ), esc_html__( 'Unsubscribed', 'wanswers' ), array( 'response' => 200 ) );
+                ? sprintf( __( '&#9989; You have been unsubscribed from notifications for: <strong>%s</strong>.', 'wanswers-seo-first-qa' ), esc_html( $q_title ) )
+                : __( '&#9989; You have been unsubscribed.', 'wanswers-seo-first-qa' );
+            wp_die( wp_kses_post( $msg ), esc_html__( 'Unsubscribed', 'wanswers-seo-first-qa' ), array( 'response' => 200 ) );
         }
     }
 }
